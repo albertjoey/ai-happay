@@ -1,0 +1,14 @@
+Name: content-api
+Host: 0.0.0.0
+Port: 4005
+
+MySQL:
+  Host: 127.0.0.1
+  Port: 3306
+  User: root
+  Password: happy123456
+  DBName: happy
+
+Redis:
+  Host: 127.0.0.1:6379
+  Type: node

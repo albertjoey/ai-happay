@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: h5-frontend
+  namespace: happy
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: h5-frontend
+  template:
+    metadata:
+      labels:
+        app: h5-frontend
+    spec:
+      containers:
+      - name: h5-frontend
+        image: happy/h5-frontend:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NEXT_PUBLIC_API_URL
+          value: "http://user-service:8001"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: h5-frontend
+  namespace: happy
+spec:
+  selector:
+    app: h5-frontend
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-frontend
+  namespace: happy
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: admin-frontend
+  template:
+    metadata:
+      labels:
+        app: admin-frontend
+    spec:
+      containers:
+      - name: admin-frontend
+        image: happy/admin-frontend:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-frontend
+  namespace: happy
+spec:
+  selector:
+    app: admin-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: happy-ingress
+  namespace: happy
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: happy.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: h5-frontend
+            port:
+              number: 80
+  - host: admin.happy.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: admin-frontend
+            port:
+              number: 80
+  - host: api.happy.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 8001

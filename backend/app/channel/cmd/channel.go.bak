@@ -1,0 +1,384 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"net/http"
+
+	"happy/app/channel/internal/config"
+	"happy/app/channel/internal/handler"
+	"happy/app/channel/internal/svc"
+
+	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/rest"
+)
+
+var configFile = flag.String("f", "app/channel/etc/channel.yaml", "the config file")
+
+func main() {
+	flag.Parse()
+
+	var c config.Config
+	conf.MustLoad(*configFile, &c)
+
+	server := rest.MustNewServer(c.RestConf, rest.WithCors("*"))
+	defer server.Stop()
+
+	// 设置响应头,确保UTF-8编码
+	server.Use(func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			next(w, r)
+		}
+	})
+
+	ctx := svc.NewServiceContext(c)
+
+	// 注册路由
+	registerRoutes(server, ctx)
+
+	fmt.Printf("Starting channel server at %s:%d...\n", c.Host, c.Port)
+	server.Start()
+}
+
+func registerRoutes(server *rest.Server, ctx *svc.ServiceContext) {
+	// 频道列表
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/channel/list",
+			Handler: handler.ChannelListHandler(ctx),
+		},
+	)
+
+	// 创建频道
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPost,
+			Path:    "/api/v1/channel",
+			Handler: handler.ChannelCreateHandler(ctx),
+		},
+	)
+
+	// 更新频道
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPut,
+			Path:    "/api/v1/channel/:id",
+			Handler: handler.ChannelUpdateHandler(ctx),
+		},
+	)
+
+	// 删除频道
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodDelete,
+			Path:    "/api/v1/channel/:id",
+			Handler: handler.ChannelDeleteHandler(ctx),
+		},
+	)
+
+	// 频道排序
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPost,
+			Path:    "/api/v1/channel/sort",
+			Handler: handler.ChannelSortHandler(ctx),
+		},
+	)
+
+	// 获取频道配置
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/channel/config/:id",
+			Handler: handler.ChannelConfigGetHandler(ctx),
+		},
+	)
+
+	// 更新频道配置
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPut,
+			Path:    "/api/v1/channel/config/:id",
+			Handler: handler.ChannelConfigUpdateHandler(ctx),
+		},
+	)
+
+	// ==================== 金刚位路由 ====================
+	// 金刚位列表
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/diamond/list",
+			Handler: handler.DiamondListHandler(ctx),
+		},
+	)
+
+	// 创建金刚位
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPost,
+			Path:    "/api/v1/diamond",
+			Handler: handler.DiamondCreateHandler(ctx),
+		},
+	)
+
+	// 更新金刚位
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPut,
+			Path:    "/api/v1/diamond/:id",
+			Handler: handler.DiamondUpdateHandler(ctx),
+		},
+	)
+
+	// 删除金刚位
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodDelete,
+			Path:    "/api/v1/diamond/:id",
+			Handler: handler.DiamondDeleteHandler(ctx),
+		},
+	)
+
+	// ==================== 推荐位路由 ====================
+	// 推荐位列表
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/recommend/list",
+			Handler: handler.RecommendListHandler(ctx),
+		},
+	)
+
+	// 创建推荐位
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPost,
+			Path:    "/api/v1/recommend",
+			Handler: handler.RecommendCreateHandler(ctx),
+		},
+	)
+
+	// 更新推荐位
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPut,
+			Path:    "/api/v1/recommend/:id",
+			Handler: handler.RecommendUpdateHandler(ctx),
+		},
+	)
+
+	// 删除推荐位
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodDelete,
+			Path:    "/api/v1/recommend/:id",
+			Handler: handler.RecommendDeleteHandler(ctx),
+		},
+	)
+
+	// ==================== Feed流路由 ====================
+	// Feed流配置列表
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/feed-config/list",
+			Handler: handler.FeedConfigListHandler(ctx),
+		},
+	)
+
+	// 创建Feed流配置
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPost,
+			Path:    "/api/v1/feed-config",
+			Handler: handler.FeedConfigCreateHandler(ctx),
+		},
+	)
+
+	// 更新Feed流配置
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPut,
+			Path:    "/api/v1/feed-config/:id",
+			Handler: handler.FeedConfigUpdateHandler(ctx),
+		},
+	)
+
+	// 删除Feed流配置
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodDelete,
+			Path:    "/api/v1/feed-config/:id",
+			Handler: handler.FeedConfigDeleteHandler(ctx),
+		},
+	)
+
+	// ==================== 广告位路由 ====================
+	// 广告位列表
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/ad-slot/list",
+			Handler: handler.AdSlotListHandler(ctx),
+		},
+	)
+
+	// 创建广告位
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPost,
+			Path:    "/api/v1/ad-slot",
+			Handler: handler.AdSlotCreateHandler(ctx),
+		},
+	)
+
+	// 更新广告位
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPut,
+			Path:    "/api/v1/ad-slot/:id",
+			Handler: handler.AdSlotUpdateHandler(ctx),
+		},
+	)
+
+	// 删除广告位
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodDelete,
+			Path:    "/api/v1/ad-slot/:id",
+			Handler: handler.AdSlotDeleteHandler(ctx),
+		},
+	)
+
+	// ==================== 物料管理路由 ====================
+	// 物料列表
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/material/list",
+			Handler: handler.MaterialListHandler(ctx),
+		},
+	)
+
+	// 创建物料
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPost,
+			Path:    "/api/v1/material",
+			Handler: handler.MaterialCreateHandler(ctx),
+		},
+	)
+
+	// 更新物料
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPut,
+			Path:    "/api/v1/material/:id",
+			Handler: handler.MaterialUpdateHandler(ctx),
+		},
+	)
+
+	// 删除物料
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodDelete,
+			Path:    "/api/v1/material/:id",
+			Handler: handler.MaterialDeleteHandler(ctx),
+		},
+	)
+}
+
+	// ==================== RBAC权限管理路由 ====================
+	// 角色管理
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/role/list",
+			Handler: handler.RoleListHandler(ctx),
+		},
+	)
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPost,
+			Path:    "/api/v1/role",
+			Handler: handler.RoleCreateHandler(ctx),
+		},
+	)
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPut,
+			Path:    "/api/v1/role/:id",
+			Handler: handler.RoleUpdateHandler(ctx),
+		},
+	)
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodDelete,
+			Path:    "/api/v1/role/:id",
+			Handler: handler.RoleDeleteHandler(ctx),
+		},
+	)
+
+	// 权限管理
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/permission/tree",
+			Handler: handler.PermissionTreeHandler(ctx),
+		},
+	)
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPost,
+			Path:    "/api/v1/permission",
+			Handler: handler.PermissionCreateHandler(ctx),
+		},
+	)
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPut,
+			Path:    "/api/v1/permission/:id",
+			Handler: handler.PermissionUpdateHandler(ctx),
+		},
+	)
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodDelete,
+			Path:    "/api/v1/permission/:id",
+			Handler: handler.PermissionDeleteHandler(ctx),
+		},
+	)
+
+	// 管理员管理
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/admin-user/list",
+			Handler: handler.AdminUserListHandler(ctx),
+		},
+	)
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPost,
+			Path:    "/api/v1/admin-user",
+			Handler: handler.AdminUserCreateHandler(ctx),
+		},
+	)
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPut,
+			Path:    "/api/v1/admin-user/:id",
+			Handler: handler.AdminUserUpdateHandler(ctx),
+		},
+	)
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodDelete,
+			Path:    "/api/v1/admin-user/:id",
+			Handler: handler.AdminUserDeleteHandler(ctx),
+		},
+	)
+}

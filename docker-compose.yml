@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: happy-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123456
+      MYSQL_DATABASE: happy
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/sql:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    networks:
+      - happy-network
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: happy-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass redis123456
+    networks:
+      - happy-network
+
+  # Elasticsearch搜索
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: happy-es
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - happy-network
+
+  # Kafka消息队列
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: happy-zookeeper
+    restart: always
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
+    networks:
+      - happy-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: happy-kafka
+    restart: always
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9093,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - happy-network
+
+  # Kafka管理界面
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: happy-kafka-ui
+    restart: always
+    depends_on:
+      - kafka
+    ports:
+      - "9000:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: happy-kafka
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - happy-network
+
+  # Redis管理界面
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: happy-redis-ui
+    restart: always
+    environment:
+      - REDIS_HOSTS=local:redis:6379:0:redis123456
+    ports:
+      - "8081:8081"
+    networks:
+      - happy-network
+
+volumes:
+  mysql_data:
+  redis_data:
+  es_data:
+  zookeeper_data:
+  zookeeper_logs:
+  kafka_data:
+
+networks:
+  happy-network:
+    driver: bridge
