@@ -441,3 +441,115 @@ type RecommendContentItem struct {
 	HotScore     float64 `json:"hot_score"`
 	CreatedAt    string  `json:"created_at"`
 }
+
+// ==================== 章节相关 ====================
+
+// Chapter 章节
+type Chapter struct {
+	ID          uint   `json:"id"`
+	MaterialID  uint   `json:"material_id"`
+	ChapterType string `json:"chapter_type"`
+	Title       string `json:"title"`
+	Content     string `json:"content"`
+	Images      string `json:"images"`
+	VideoURL    string `json:"video_url"`
+	WordCount   uint   `json:"word_count"`
+	Duration    uint   `json:"duration"`
+	Sort        int    `json:"sort"`
+	IsFree      int8   `json:"is_free"`
+	Price       uint   `json:"price"`
+}
+
+// ChapterListRequest 章节列表请求
+type ChapterListRequest struct {
+	MaterialID uint `form:"material_id"`
+	Page       int  `form:"page,default=1"`
+	PageSize   int  `form:"page_size,default=20"`
+}
+
+// ChapterListResponse 章节列表响应
+type ChapterListResponse struct {
+	Total int64     `json:"total"`
+	List  []Chapter `json:"list"`
+}
+
+// ChapterDetailResponse 章节详情响应
+type ChapterDetailResponse struct {
+	Chapter Chapter `json:"chapter"`
+	PrevID  uint    `json:"prev_id"`
+	NextID  uint    `json:"next_id"`
+}
+
+// ChapterCreateRequest 创建章节请求
+type ChapterCreateRequest struct {
+	MaterialID  uint   `json:"material_id"`
+	ChapterType string `json:"chapter_type"`
+	Title       string `json:"title"`
+	Content     string `json:"content,optional"`
+	Images      string `json:"images,optional"`
+	VideoURL    string `json:"video_url,optional"`
+	WordCount   uint   `json:"word_count,optional"`
+	Duration    uint   `json:"duration,optional"`
+	IsFree      int8   `json:"is_free,default=1"`
+	Price       uint   `json:"price,optional"`
+}
+
+// ChapterUpdateRequest 更新章节请求
+type ChapterUpdateRequest struct {
+	ID          uint   `path:"id"`
+	ChapterType string `json:"chapter_type,optional"`
+	Title       string `json:"title,optional"`
+	Content     string `json:"content,optional"`
+	Images      string `json:"images,optional"`
+	VideoURL    string `json:"video_url,optional"`
+	WordCount   uint   `json:"word_count,optional"`
+	Duration    uint   `json:"duration,optional"`
+	Sort        int    `json:"sort,optional"`
+	IsFree      int8   `json:"is_free,optional"`
+	Price       uint   `json:"price,optional"`
+}
+
+// ==================== Banner相关 ====================
+
+// Banner Banner
+type Banner struct {
+	ID        uint   `json:"id"`
+	ChannelID uint   `json:"channel_id"`
+	Title     string `json:"title"`
+	Image     string `json:"image"`
+	LinkURL   string `json:"link_url"`
+	LinkType  string `json:"link_type"`
+	Sort      int    `json:"sort"`
+	Status    int8   `json:"status"`
+}
+
+// BannerListResponse Banner列表响应
+type BannerListResponse struct {
+	List []Banner `json:"list"`
+}
+
+// ==================== 评论相关 ====================
+
+// Comment 评论
+type Comment struct {
+	ID         uint   `json:"id"`
+	UserID     uint   `json:"user_id"`
+	MaterialID uint   `json:"material_id"`
+	Content    string `json:"content"`
+	ParentID   uint   `json:"parent_id"`
+	LikeCount  uint   `json:"like_count"`
+	CreatedAt  string `json:"created_at"`
+}
+
+// CommentListResponse 评论列表响应
+type CommentListResponse struct {
+	Total int64      `json:"total"`
+	List  []Comment `json:"list"`
+}
+
+// ==================== 物料详情相关 ====================
+
+// MaterialDetailResponse 物料详情响应
+type MaterialDetailResponse struct {
+	Material Material `json:"material"`
+}

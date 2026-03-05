@@ -2,10 +2,8 @@ package logic
 
 import (
 	"context"
-	"encoding/json"
-	"time"
-
 	"happy/app/channel/internal/svc"
+	"happy/app/channel/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,18 +23,18 @@ func NewChapterListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Chapt
 }
 
 type ChapterItem struct {
-	ID          uint                   `json:"id"`
-	MaterialID  uint                   `json:"material_id"`
-	ChapterType string                 `json:"chapter_type"`
-	Title       string                 `json:"title"`
-	Content     string                 `json:"content"`
-	Images      []string               `json:"images"`
-	VideoURL    string                 `json:"video_url"`
-	WordCount   int                    `json:"word_count"`
-	Duration    int                    `json:"duration"`
-	Sort        int                    `json:"sort"`
-	IsFree      int                    `json:"is_free"`
-	Price       int                    `json:"price"`
+	ID          uint     `json:"id"`
+	MaterialID  uint     `json:"material_id"`
+	ChapterType string   `json:"chapter_type"`
+	Title       string   `json:"title"`
+	Content     string   `json:"content"`
+	Images      []string `json:"images"`
+	VideoURL    string   `json:"video_url"`
+	WordCount   int      `json:"word_count"`
+	Duration    int      `json:"duration"`
+	Sort        int      `json:"sort"`
+	IsFree      int      `json:"is_free"`
+	Price       int      `json:"price"`
 }
 
 type ChapterListResponse struct {
@@ -45,24 +43,32 @@ type ChapterListResponse struct {
 }
 
 func (l *ChapterListLogic) ChapterList(materialID uint) (*ChapterListResponse, error) {
-	query := `SELECT id, material_id, chapter_type, title, content, images, video_url, word_count, duration, sort, is_free, price 
-			  FROM material_chapter 
-			  WHERE material_id = ? AND deleted_at IS NULL AND status = 1 
-			  ORDER BY sort ASC`
-
-	var list []ChapterItem
-	err := l.svcCtx.DB.Raw(query, materialID).Scan(&list).Error
+	// 使用Repository接口
+	list, total, err := l.svcCtx.ChapterRepo.List(l.ctx, materialID, 1, 1000)
 	if err != nil {
 		return nil, err
 	}
 
-	// 获取总数
-	var total int64
-	countQuery := `SELECT COUNT(*) FROM material_chapter WHERE material_id = ? AND deleted_at IS NULL AND status = 1`
-	l.svcCtx.DB.Raw(countQuery, materialID).Scan(&total)
+	// 转换响应格式
+	items := make([]ChapterItem, 0, len(list))
+	for _, ch := range list {
+		items = append(items, ChapterItem{
+			ID:          ch.ID,
+			MaterialID:  ch.MaterialID,
+			ChapterType: ch.ChapterType,
+			Title:       ch.Title,
+			Content:     ch.Content,
+			VideoURL:    ch.VideoURL,
+			WordCount:   int(ch.WordCount),
+			Duration:    int(ch.Duration),
+			Sort:        ch.Sort,
+			IsFree:      int(ch.IsFree),
+			Price:       int(ch.Price),
+		})
+	}
 
 	return &ChapterListResponse{
-		List:  list,
+		List:  items,
 		Total: total,
 	}, nil
 }
@@ -99,33 +105,33 @@ type ChapterDetailResponse struct {
 }
 
 func (l *ChapterDetailLogic) ChapterDetail(chapterID uint) (*ChapterDetailResponse, error) {
-	query := `SELECT id, material_id, chapter_type, title, content, images, video_url, word_count, duration, sort, is_free, price 
-			  FROM material_chapter 
-			  WHERE id = ? AND deleted_at IS NULL AND status = 1`
-
-	var resp ChapterDetailResponse
-	err := l.svcCtx.DB.Raw(query, chapterID).Scan(&resp).Error
+	// 使用Repository接口
+	chapter, err := l.svcCtx.ChapterRepo.FindByID(l.ctx, chapterID)
 	if err != nil {
 		return nil, err
 	}
 
-	// 获取上一章ID
-	var prevID *uint
-	prevQuery := `SELECT id FROM material_chapter WHERE material_id = ? AND sort < ? AND deleted_at IS NULL AND status = 1 ORDER BY sort DESC LIMIT 1`
-	l.svcCtx.DB.Raw(prevQuery, resp.MaterialID, resp.Sort).Scan(&prevID)
-	if prevID != nil {
-		resp.PrevID = *prevID
+	// 获取上一章/下一章
+	prevID, nextID, err := l.svcCtx.ChapterRepo.FindPrevNext(l.ctx, chapterID)
+	if err != nil {
+		return nil, err
 	}
 
-	// 获取下一章ID
-	var nextID *uint
-	nextQuery := `SELECT id FROM material_chapter WHERE material_id = ? AND sort > ? AND deleted_at IS NULL AND status = 1 ORDER BY sort ASC LIMIT 1`
-	l.svcCtx.DB.Raw(nextQuery, resp.MaterialID, resp.Sort).Scan(&nextID)
-	if nextID != nil {
-		resp.NextID = *nextID
-	}
-
-	return &resp, nil
+	return &ChapterDetailResponse{
+		ID:          chapter.ID,
+		MaterialID:  chapter.MaterialID,
+		ChapterType: chapter.ChapterType,
+		Title:       chapter.Title,
+		Content:     chapter.Content,
+		VideoURL:    chapter.VideoURL,
+		WordCount:   int(chapter.WordCount),
+		Duration:    int(chapter.Duration),
+		Sort:        chapter.Sort,
+		IsFree:      int(chapter.IsFree),
+		Price:       int(chapter.Price),
+		PrevID:      prevID,
+		NextID:      nextID,
+	}, nil
 }
 
 // ==================== 章节管理CRUD ====================
@@ -172,33 +178,38 @@ func NewChapterCreateLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cha
 }
 
 func (l *ChapterCreateLogic) ChapterCreate(req *ChapterCreateRequest) (interface{}, error) {
-	now := time.Now()
-	
-	// 如果没有指定排序，获取当前最大排序+1
-	if req.Sort == 0 {
-		var maxSort int
-		l.svcCtx.DB.Raw("SELECT COALESCE(MAX(sort), 0) FROM material_chapter WHERE material_id = ? AND deleted_at IS NULL", req.MaterialID).Scan(&maxSort)
-		req.Sort = maxSort + 1
+	// 获取最大排序值
+	maxSort, _ := l.svcCtx.ChapterRepo.GetMaxSort(l.ctx, req.MaterialID)
+	sort := req.Sort
+	if sort == 0 {
+		sort = maxSort + 1
 	}
-	
-	// 如果没有指定字数，计算字数
-	if req.WordCount == 0 && req.Content != "" {
-		req.WordCount = len([]rune(req.Content))
+
+	// 计算字数
+	wordCount := req.WordCount
+	if wordCount == 0 && req.Content != "" {
+		wordCount = len([]rune(req.Content))
 	}
-	
-	// 序列化images
-	imagesJSON, _ := json.Marshal(req.Images)
-	
-	insertSQL := `
-		INSERT INTO material_chapter (material_id, chapter_type, title, content, images, video_url, word_count, duration, sort, is_free, price, status, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
-	`
-	result := l.svcCtx.DB.Exec(insertSQL, req.MaterialID, req.ChapterType, req.Title, req.Content, imagesJSON, req.VideoURL, req.WordCount, req.Duration, req.Sort, req.IsFree, req.Price, now, now)
-	if result.Error != nil {
-		return nil, result.Error
+
+	chapter := &types.Chapter{
+		MaterialID:  req.MaterialID,
+		ChapterType: req.ChapterType,
+		Title:       req.Title,
+		Content:     req.Content,
+		VideoURL:    req.VideoURL,
+		WordCount:   uint(wordCount),
+		Duration:    uint(req.Duration),
+		Sort:        sort,
+		IsFree:      int8(req.IsFree),
+		Price:       uint(req.Price),
 	}
-	
-	return map[string]interface{}{"id": result.RowsAffected, "success": true}, nil
+
+	err := l.svcCtx.ChapterRepo.Create(l.ctx, chapter)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{"id": chapter.ID, "success": true}, nil
 }
 
 type ChapterUpdateLogic struct {
@@ -216,26 +227,30 @@ func NewChapterUpdateLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cha
 }
 
 func (l *ChapterUpdateLogic) ChapterUpdate(id uint, req *ChapterUpdateRequest) (interface{}, error) {
-	now := time.Now()
-	
-	// 如果没有指定字数，计算字数
-	if req.WordCount == 0 && req.Content != "" {
-		req.WordCount = len([]rune(req.Content))
+	// 计算字数
+	wordCount := req.WordCount
+	if wordCount == 0 && req.Content != "" {
+		wordCount = len([]rune(req.Content))
 	}
-	
-	// 序列化images
-	imagesJSON, _ := json.Marshal(req.Images)
-	
-	updateSQL := `
-		UPDATE material_chapter 
-		SET chapter_type = ?, title = ?, content = ?, images = ?, video_url = ?, word_count = ?, duration = ?, sort = ?, is_free = ?, price = ?, updated_at = ?
-		WHERE id = ? AND deleted_at IS NULL
-	`
-	result := l.svcCtx.DB.Exec(updateSQL, req.ChapterType, req.Title, req.Content, imagesJSON, req.VideoURL, req.WordCount, req.Duration, req.Sort, req.IsFree, req.Price, now, id)
-	if result.Error != nil {
-		return nil, result.Error
+
+	chapter := &types.Chapter{
+		ID:          id,
+		ChapterType: req.ChapterType,
+		Title:       req.Title,
+		Content:     req.Content,
+		VideoURL:    req.VideoURL,
+		WordCount:   uint(wordCount),
+		Duration:    uint(req.Duration),
+		Sort:        req.Sort,
+		IsFree:      int8(req.IsFree),
+		Price:       uint(req.Price),
 	}
-	
+
+	err := l.svcCtx.ChapterRepo.Update(l.ctx, chapter)
+	if err != nil {
+		return nil, err
+	}
+
 	return map[string]interface{}{"success": true}, nil
 }
 
@@ -254,13 +269,10 @@ func NewChapterDeleteLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cha
 }
 
 func (l *ChapterDeleteLogic) ChapterDelete(id uint) (interface{}, error) {
-	now := time.Now()
-	
-	deleteSQL := `UPDATE material_chapter SET deleted_at = ? WHERE id = ?`
-	result := l.svcCtx.DB.Exec(deleteSQL, now, id)
-	if result.Error != nil {
-		return nil, result.Error
+	err := l.svcCtx.ChapterRepo.Delete(l.ctx, id)
+	if err != nil {
+		return nil, err
 	}
-	
+
 	return map[string]interface{}{"success": true}, nil
 }

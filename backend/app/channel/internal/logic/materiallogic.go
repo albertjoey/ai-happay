@@ -2,7 +2,6 @@ package logic
 
 import (
 	"context"
-
 	"happy/app/channel/internal/svc"
 	"happy/app/channel/internal/types"
 
@@ -24,64 +23,11 @@ func NewMaterialListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Mate
 }
 
 func (l *MaterialListLogic) MaterialList(req *types.MaterialListRequest) (*types.MaterialListResponse, error) {
-	// 默认分页参数
-	page := req.Page
-	if page < 1 {
-		page = 1
+	// 使用Repository接口 - 解耦数据库实现
+	list, total, err := l.svcCtx.MaterialRepo.List(l.ctx, req)
+	if err != nil {
+		return nil, err
 	}
-	pageSize := req.PageSize
-	if pageSize < 1 {
-		pageSize = 10
-	}
-	if pageSize > 100 {
-		pageSize = 100
-	}
-	offset := (page - 1) * pageSize
-
-	// 查询总数
-	var total int64
-	countSQL := `SELECT COUNT(*) FROM material WHERE deleted_at IS NULL`
-	countArgs := []interface{}{}
-
-	if req.Type != "" {
-		countSQL += " AND type = ?"
-		countArgs = append(countArgs, req.Type)
-	}
-	if req.Status != nil {
-		countSQL += " AND status = ?"
-		countArgs = append(countArgs, *req.Status)
-	}
-
-	l.svcCtx.DB.Raw(countSQL, countArgs...).Scan(&total)
-
-	// 查询列表
-	listSQL := `
-		SELECT id, title, subtitle, type, cover_url, content_url, description,
-			   author, category, view_count, like_count, comment_count, 
-			   share_count, collect_count, duration, word_count, chapter_count, status, sort
-		FROM material
-		WHERE deleted_at IS NULL
-	`
-	listArgs := []interface{}{}
-
-	if req.Type != "" {
-		listSQL += " AND type = ?"
-		listArgs = append(listArgs, req.Type)
-	}
-	if req.Status != nil {
-		listSQL += " AND status = ?"
-		listArgs = append(listArgs, *req.Status)
-	}
-
-	// 排序
-	listSQL += " ORDER BY id DESC"
-
-	// 分页
-	listSQL += " LIMIT ? OFFSET ?"
-	listArgs = append(listArgs, pageSize, offset)
-
-	var list []types.Material
-	l.svcCtx.DB.Raw(listSQL, listArgs...).Scan(&list)
 
 	return &types.MaterialListResponse{
 		Total: total,
@@ -104,7 +50,29 @@ func NewMaterialCreateLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ma
 }
 
 func (l *MaterialCreateLogic) MaterialCreate(req *types.MaterialCreateRequest) (interface{}, error) {
-	return map[string]interface{}{"id": 100, "success": true}, nil
+	// 构建物料对象
+	material := &types.Material{
+		Title:       req.Title,
+		Subtitle:    req.Subtitle,
+		Type:        req.Type,
+		CoverURL:    req.CoverURL,
+		ContentURL:  req.ContentURL,
+		Description: req.Description,
+		Author:      req.Author,
+		Category:    req.Category,
+		Duration:    req.Duration,
+		WordCount:   req.WordCount,
+		Status:      1,
+		Sort:        0,
+	}
+
+	// 使用Repository接口创建
+	err := l.svcCtx.MaterialRepo.Create(l.ctx, material)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{"id": material.ID, "success": true}, nil
 }
 
 type MaterialUpdateLogic struct {
@@ -122,6 +90,23 @@ func NewMaterialUpdateLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ma
 }
 
 func (l *MaterialUpdateLogic) MaterialUpdate(req *types.MaterialUpdateRequest) (interface{}, error) {
+	// 构建物料对象
+	material := &types.Material{
+		ID:          req.ID,
+		Title:       req.Title,
+		Subtitle:    req.Subtitle,
+		Description: req.Description,
+	}
+	if req.Status != nil {
+		material.Status = *req.Status
+	}
+
+	// 使用Repository接口更新
+	err := l.svcCtx.MaterialRepo.Update(l.ctx, material)
+	if err != nil {
+		return nil, err
+	}
+
 	return map[string]interface{}{"success": true}, nil
 }
 
@@ -140,5 +125,11 @@ func NewMaterialDeleteLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ma
 }
 
 func (l *MaterialDeleteLogic) MaterialDelete(id uint) (interface{}, error) {
+	// 使用Repository接口删除
+	err := l.svcCtx.MaterialRepo.Delete(l.ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
 	return map[string]interface{}{"success": true}, nil
 }

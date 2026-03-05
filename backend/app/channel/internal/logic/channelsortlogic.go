@@ -25,10 +25,7 @@ func NewChannelSortLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Chann
 func (l *ChannelSortLogic) ChannelSort(req *types.ChannelSortRequest) error {
 	// 批量更新排序
 	for _, item := range req.Items {
-		l.svcCtx.DB.Exec(
-			"UPDATE channel SET sort = ? WHERE id = ? AND tenant_id = ?",
-			item.Sort, item.ID, 1,
-		)
+		l.svcCtx.ChannelRepo.UpdateSort(l.ctx, item.ID, item.Sort)
 	}
 	return nil
 }

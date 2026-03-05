@@ -23,14 +23,11 @@ func NewPermissionListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Pe
 }
 
 func (l *PermissionListLogic) PermissionTree() ([]types.Permission, error) {
-	// 查询所有权限
-	var permissions []types.Permission
-	l.svcCtx.DB.Raw(`
-		SELECT id, name, code, type, parent_id, path, icon, status
-		FROM permission
-		WHERE deleted_at IS NULL
-		ORDER BY id ASC
-	`).Scan(&permissions)
+	// 使用Repository接口
+	permissions, err := l.svcCtx.PermissionRepo.List(l.ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	// 构建树形结构
 	return buildPermissionTree(permissions, 0), nil
@@ -65,16 +62,21 @@ func NewPermissionCreateLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *PermissionCreateLogic) PermissionCreate(req *types.PermissionCreateRequest) (interface{}, error) {
-	result := l.svcCtx.DB.Exec(`
-		INSERT INTO permission (name, code, type, parent_id, path, icon, status)
-		VALUES (?, ?, ?, ?, ?, ?, 1)
-	`, req.Name, req.Code, req.Type, req.ParentID, req.Path, req.Icon)
-
-	if result.Error != nil {
-		return nil, result.Error
+	permission := &types.Permission{
+		Name:     req.Name,
+		Code:     req.Code,
+		Type:     req.Type,
+		ParentID: req.ParentID,
+		Path:     req.Path,
+		Icon:     req.Icon,
 	}
 
-	return map[string]interface{}{"id": 1, "success": true}, nil
+	err := l.svcCtx.PermissionRepo.Create(l.ctx, permission)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{"id": permission.ID, "success": true}, nil
 }
 
 type PermissionUpdateLogic struct {
@@ -92,13 +94,23 @@ func NewPermissionUpdateLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *PermissionUpdateLogic) PermissionUpdate(req *types.PermissionUpdateRequest) (interface{}, error) {
-	result := l.svcCtx.DB.Exec(`
-		UPDATE permission SET name = ?, type = ?, parent_id = ?, path = ?, icon = ?, status = ?
-		WHERE id = ? AND deleted_at IS NULL
-	`, req.Name, req.Type, req.ParentID, req.Path, req.Icon, req.Status, req.ID)
+	permission := &types.Permission{
+		ID:       req.ID,
+		Name:     req.Name,
+		Type:     req.Type,
+		Path:     req.Path,
+		Icon:     req.Icon,
+	}
+	if req.ParentID != nil {
+		permission.ParentID = *req.ParentID
+	}
+	if req.Status != nil {
+		permission.Status = *req.Status
+	}
 
-	if result.Error != nil {
-		return nil, result.Error
+	err := l.svcCtx.PermissionRepo.Update(l.ctx, permission)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{"success": true}, nil
@@ -119,9 +131,9 @@ func NewPermissionDeleteLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *PermissionDeleteLogic) PermissionDelete(id uint) (interface{}, error) {
-	result := l.svcCtx.DB.Exec("UPDATE permission SET deleted_at = NOW() WHERE id = ?", id)
-	if result.Error != nil {
-		return nil, result.Error
+	err := l.svcCtx.PermissionRepo.Delete(l.ctx, id)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{"success": true}, nil

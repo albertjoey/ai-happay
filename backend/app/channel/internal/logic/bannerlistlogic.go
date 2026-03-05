@@ -2,7 +2,6 @@ package logic
 
 import (
 	"context"
-
 	"happy/app/channel/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -36,34 +35,40 @@ type BannerListResponse struct {
 }
 
 func (l *BannerListLogic) BannerList(channelID uint, status int) (*BannerListResponse, error) {
-	query := `
-		SELECT id, title, image, link_type, link_url, sort
-		FROM banner
-		WHERE deleted_at IS NULL
-	`
-	args := []interface{}{}
-
-	if channelID > 0 {
-		query += " AND channel_id = ?"
-		args = append(args, channelID)
-	}
-
-	if status > 0 {
-		query += " AND status = ?"
-		args = append(args, status)
-	}
-
-	query += " ORDER BY sort ASC"
-
-	var banners []BannerItem
-	err := l.svcCtx.DB.Raw(query, args...).Scan(&banners).Error
+	// 使用Repository接口
+	banners, err := l.svcCtx.BannerRepo.List(l.ctx, channelID)
 	if err != nil {
 		return nil, err
 	}
 
-	if banners == nil {
-		banners = []BannerItem{}
+	// 转换响应格式
+	list := make([]BannerItem, 0, len(banners))
+	for _, b := range banners {
+		if status > 0 && b.Status != int8(status) {
+			continue
+		}
+		list = append(list, BannerItem{
+			ID:       b.ID,
+			Title:    b.Title,
+			Image:    b.Image,
+			LinkType: int(parseLinkType(b.LinkType)),
+			LinkURL:  b.LinkURL,
+			Sort:     b.Sort,
+		})
 	}
 
-	return &BannerListResponse{List: banners}, nil
+	return &BannerListResponse{List: list}, nil
+}
+
+func parseLinkType(linkType string) int {
+	switch linkType {
+	case "material":
+		return 1
+	case "channel":
+		return 2
+	case "url":
+		return 3
+	default:
+		return 0
+	}
 }
