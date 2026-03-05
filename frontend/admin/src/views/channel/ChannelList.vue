@@ -145,6 +145,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { message } from 'ant-design-vue';
 import { PlusOutlined } from '@ant-design/icons-vue';
 import type { FormInstance } from 'ant-design-vue';
@@ -167,6 +168,7 @@ const configModalVisible = ref(false);
 const modalTitle = ref('添加频道');
 const currentChannelId = ref<number>(0);
 const formRef = ref<FormInstance>();
+const router = useRouter();
 
 const pagination = reactive({
   current: 1,
@@ -264,16 +266,9 @@ const handleEdit = (row: Channel) => {
   modalVisible.value = true;
 };
 
-// 配置频道
-const handleConfig = async (row: Channel) => {
-  currentChannelId.value = row.id;
-  try {
-    const config = await getChannelConfig(row.id);
-    Object.assign(configFormState, config);
-    configModalVisible.value = true;
-  } catch (error) {
-    message.error('加载频道配置失败');
-  }
+// 配置频道 - 跳转到频道配置页面
+const handleConfig = (row: Channel) => {
+  router.push({ path: '/channel/config', query: { channel_id: row.id } });
 };
 
 // 上移频道
