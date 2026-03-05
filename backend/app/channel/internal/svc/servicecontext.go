@@ -29,6 +29,8 @@ type ServiceContext struct {
 	AdSlotRepo      repository.AdSlotRepository
 	FeedConfigRepo  repository.FeedConfigRepository
 	InteractionRepo repository.InteractionRepository
+	TopicRepo       repository.TopicRepository
+	TagRepo         repository.TagRepository
 }
 
 // NewServiceContext 创建服务上下文
@@ -81,5 +83,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		AdSlotRepo:      repository.NewAdSlotRepository(db),
 		FeedConfigRepo:  repository.NewFeedConfigRepository(db),
 		InteractionRepo: repository.NewInteractionRepository(db),
+		TopicRepo:       repository.NewTopicRepository(db),
+		TagRepo:         repository.NewTagRepository(db),
 	}
 }

@@ -186,3 +186,35 @@ type InteractionRepository interface {
 	// IsCollected 是否已收藏
 	IsCollected(ctx context.Context, userID, materialID uint) (bool, error)
 }
+
+// ==================== 话题相关 ====================
+
+// TopicRepository 话题仓储接口
+type TopicRepository interface {
+	// List 获取话题列表
+	List(ctx context.Context, req *types.TopicListRequest) ([]types.Topic, int64, error)
+	// FindByID 根据ID获取话题
+	FindByID(ctx context.Context, id uint) (*types.Topic, error)
+	// Create 创建话题
+	Create(ctx context.Context, topic *types.Topic) error
+	// Update 更新话题
+	Update(ctx context.Context, topic *types.Topic) error
+	// Delete 删除话题
+	Delete(ctx context.Context, id uint) error
+}
+
+// ==================== 标签相关 ====================
+
+// TagRepository 标签仓储接口
+type TagRepository interface {
+	// List 获取标签列表
+	List(ctx context.Context, req *types.TagListRequest) ([]types.Tag, int64, error)
+	// FindByID 根据ID获取标签
+	FindByID(ctx context.Context, id uint) (*types.Tag, error)
+	// Create 创建标签
+	Create(ctx context.Context, tag *types.Tag) error
+	// Update 更新标签
+	Update(ctx context.Context, tag *types.Tag) error
+	// Delete 删除标签
+	Delete(ctx context.Context, id uint) error
+}

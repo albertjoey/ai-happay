@@ -546,4 +546,72 @@ func registerRoutes(server *rest.Server, ctx *svc.ServiceContext) {
 			Handler: handler.CommentDeleteHandler(ctx),
 		},
 	)
+
+	// ==================== 话题管理路由 ====================
+	// 话题列表
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/topic/list",
+			Handler: handler.TopicListHandler(ctx),
+		},
+	)
+	// 创建话题
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPost,
+			Path:    "/api/v1/topic",
+			Handler: handler.TopicCreateHandler(ctx),
+		},
+	)
+	// 更新话题
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPut,
+			Path:    "/api/v1/topic/:id",
+			Handler: handler.TopicUpdateHandler(ctx),
+		},
+	)
+	// 删除话题
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodDelete,
+			Path:    "/api/v1/topic/:id",
+			Handler: handler.TopicDeleteHandler(ctx),
+		},
+	)
+
+	// ==================== 标签管理路由 ====================
+	// 标签列表
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/tag/list",
+			Handler: handler.TagListHandler(ctx),
+		},
+	)
+	// 创建标签
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPost,
+			Path:    "/api/v1/tag",
+			Handler: handler.TagCreateHandler(ctx),
+		},
+	)
+	// 更新标签
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPut,
+			Path:    "/api/v1/tag/:id",
+			Handler: handler.TagUpdateHandler(ctx),
+		},
+	)
+	// 删除标签
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodDelete,
+			Path:    "/api/v1/tag/:id",
+			Handler: handler.TagDeleteHandler(ctx),
+		},
+	)
 }

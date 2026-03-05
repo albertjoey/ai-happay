@@ -553,3 +553,91 @@ type CommentListResponse struct {
 type MaterialDetailResponse struct {
 	Material Material `json:"material"`
 }
+
+// ==================== 话题相关 ====================
+
+// Topic 话题
+type Topic struct {
+	ID          uint   `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Cover       string `json:"cover"`
+	Status      int8   `json:"status"`
+	Sort        int    `json:"sort"`
+	CreatedAt   string `json:"created_at"`
+}
+
+// TopicListRequest 话题列表请求
+type TopicListRequest struct {
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=20"`
+	Name     string `form:"name,optional"`
+	Status   *int8  `form:"status,optional"`
+}
+
+// TopicListResponse 话题列表响应
+type TopicListResponse struct {
+	Total int64   `json:"total"`
+	List  []Topic `json:"list"`
+}
+
+// TopicCreateRequest 创建话题请求
+type TopicCreateRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description,optional"`
+	Cover       string `json:"cover,optional"`
+	Sort        int    `json:"sort,optional"`
+}
+
+// TopicUpdateRequest 更新话题请求
+type TopicUpdateRequest struct {
+	ID          uint   `path:"id"`
+	Name        string `json:"name,optional"`
+	Description string `json:"description,optional"`
+	Cover       string `json:"cover,optional"`
+	Status      *int8  `json:"status,optional"`
+	Sort        *int   `json:"sort,optional"`
+}
+
+// ==================== 标签相关 ====================
+
+// Tag 标签
+type Tag struct {
+	ID        uint   `json:"id"`
+	Name      string `json:"name"`
+	Type      int8   `json:"type"`
+	Status    int8   `json:"status"`
+	Sort      int    `json:"sort"`
+	CreatedAt string `json:"created_at"`
+}
+
+// TagListRequest 标签列表请求
+type TagListRequest struct {
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=20"`
+	Name     string `form:"name,optional"`
+	Type     *int8  `form:"type,optional"`
+	Status   *int8  `form:"status,optional"`
+}
+
+// TagListResponse 标签列表响应
+type TagListResponse struct {
+	Total int64 `json:"total"`
+	List  []Tag `json:"list"`
+}
+
+// TagCreateRequest 创建标签请求
+type TagCreateRequest struct {
+	Name string `json:"name"`
+	Type int8   `json:"type,optional"`
+	Sort int    `json:"sort,optional"`
+}
+
+// TagUpdateRequest 更新标签请求
+type TagUpdateRequest struct {
+	ID     uint   `path:"id"`
+	Name   string `json:"name,optional"`
+	Type   *int8  `json:"type,optional"`
+	Status *int8  `json:"status,optional"`
+	Sort   *int   `json:"sort,optional"`
+}
