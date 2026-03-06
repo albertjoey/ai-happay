@@ -734,3 +734,93 @@ type DiscoverModuleData struct {
 	Items  []interface{} `json:"items"`
 }
 
+
+// DiscoverConfig 发现页模块配置
+type DiscoverConfig struct {
+	ID         uint                   `json:"id"`
+	Module     string                 `json:"module"`
+	Title      string                 `json:"title"`
+	IsEnabled  bool                   `json:"is_enabled"`
+	SortOrder  int                    `json:"sort_order"`
+	Config     map[string]interface{} `json:"config"`
+}
+
+// DiscoverItem 发现页内容项
+type DiscoverItem struct {
+	ID        uint                   `json:"id"`
+	Module    string                 `json:"module"`
+	ItemType  string                 `json:"item_type"`
+	ItemID    uint                   `json:"item_id"`
+	Title     string                 `json:"title"`
+	CoverURL  string                 `json:"cover_url"`
+	ExtraData map[string]interface{} `json:"extra_data"`
+	SortOrder int                    `json:"sort_order"`
+}
+
+// DiscoverConfigListRequest 发现页配置列表请求
+type DiscoverConfigListRequest struct {
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=20"`
+	Module   string `form:"module,optional"`
+}
+
+// DiscoverConfigListResponse 发现页配置列表响应
+type DiscoverConfigListResponse struct {
+	Total int64            `json:"total"`
+	List  []DiscoverConfig `json:"list"`
+}
+
+// DiscoverConfigUpdateRequest 更新发现页配置请求
+type DiscoverConfigUpdateRequest struct {
+	ID        uint                   `path:"id"`
+	Title     string                 `json:"title,optional"`
+	IsEnabled *bool                  `json:"is_enabled,optional"`
+	SortOrder *int                   `json:"sort_order,optional"`
+	Config    map[string]interface{} `json:"config,optional"`
+}
+
+// DiscoverItemListRequest 发现页内容列表请求
+type DiscoverItemListRequest struct {
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=20"`
+	Module   string `form:"module"`
+}
+
+// DiscoverItemListResponse 发现页内容列表响应
+type DiscoverItemListResponse struct {
+	Total int64           `json:"total"`
+	List  []DiscoverItem  `json:"list"`
+}
+
+// DiscoverItemCreateRequest 创建发现页内容请求
+type DiscoverItemCreateRequest struct {
+	Module    string                 `json:"module"`
+	ItemType  string                 `json:"item_type"`
+	ItemID    uint                   `json:"item_id"`
+	Title     string                 `json:"title,optional"`
+	CoverURL  string                 `json:"cover_url,optional"`
+	ExtraData map[string]interface{} `json:"extra_data,optional"`
+	SortOrder int                    `json:"sort_order,optional"`
+}
+
+// DiscoverItemUpdateRequest 更新发现页内容请求
+type DiscoverItemUpdateRequest struct {
+	ID        uint                   `path:"id"`
+	Title     string                 `json:"title,optional"`
+	CoverURL  string                 `json:"cover_url,optional"`
+	ExtraData map[string]interface{} `json:"extra_data,optional"`
+	SortOrder *int                   `json:"sort_order,optional"`
+	IsEnabled *bool                  `json:"is_enabled,optional"`
+}
+
+// DiscoverPageResponse 发现页完整响应
+type DiscoverPageResponse struct {
+	Modules []DiscoverModuleData `json:"modules"`
+}
+
+// DiscoverModuleData 发现页模块数据
+type DiscoverModuleData struct {
+	Module string        `json:"module"`
+	Title  string        `json:"title"`
+	Items  []interface{} `json:"items"`
+}

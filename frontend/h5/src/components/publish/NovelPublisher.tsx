@@ -1,28 +1,59 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { publishMaterial, uploadFile, NovelPublishRequest, Chapter as ChapterType } from '@/lib/publishApi';
 
 interface NovelPublisherProps {
   onSuccess?: () => void;
 }
 
 interface Chapter {
+  chapter_number: number;
   title: string;
   content: string;
+  word_count: number;
 }
 
 export default function NovelPublisher({ onSuccess }: NovelPublisherProps) {
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [author, setAuthor] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
-  const [chapters, setChapters] = useState<Chapter[]>([{ title: '第一章', content: '' }]);
+  const [chapters, setChapters] = useState<Chapter[]>([{ chapter_number: 1, title: '第一章', content: '', word_count: 0 }]);
   const [currentChapter, setCurrentChapter] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
+  // 选择封面
+  const handleSelectCover = () => {
+    coverInputRef.current?.click();
+  };
+
+  // 处理封面上传
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const uploadedUrl = await uploadFile(file, 'image');
+      setCoverUrl(uploadedUrl);
+    } catch (error) {
+      alert('封面上传失败，请重试');
+    } finally {
+      if (coverInputRef.current) {
+        coverInputRef.current.value = '';
+      }
+    }
+  };
+
   // 添加章节
   const addChapter = () => {
-    setChapters([...chapters, { title: `第${chapters.length + 1}章`, content: '' }]);
+    setChapters([...chapters, {
+      chapter_number: chapters.length + 1,
+      title: `第${chapters.length + 1}章`,
+      content: '',
+      word_count: 0
+    }]);
     setCurrentChapter(chapters.length);
   };
 
@@ -30,6 +61,10 @@ export default function NovelPublisher({ onSuccess }: NovelPublisherProps) {
   const removeChapter = (index: number) => {
     if (chapters.length > 1) {
       const newChapters = chapters.filter((_, i) => i !== index);
+      // 重新编号
+      newChapters.forEach((ch, i) => {
+        ch.chapter_number = i + 1;
+      });
       setChapters(newChapters);
       if (currentChapter >= newChapters.length) {
         setCurrentChapter(newChapters.length - 1);
@@ -41,11 +76,14 @@ export default function NovelPublisher({ onSuccess }: NovelPublisherProps) {
   const updateChapter = (index: number, field: keyof Chapter, value: string) => {
     const newChapters = [...chapters];
     newChapters[index] = { ...newChapters[index], [field]: value };
+    if (field === 'content') {
+      newChapters[index].word_count = value.length;
+    }
     setChapters(newChapters);
   };
 
   // 计算总字数
-  const totalWords = chapters.reduce((sum, ch) => sum + ch.content.length, 0);
+  const totalWords = chapters.reduce((sum, ch) => sum + ch.word_count, 0);
 
   // 提交发布
   const handleSubmit = async () => {
@@ -60,27 +98,25 @@ export default function NovelPublisher({ onSuccess }: NovelPublisherProps) {
 
     setSubmitting(true);
     try {
-      const response = await fetch('http://localhost:4004/api/v1/material', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'novel',
-          title,
-          description,
-          cover_url: coverUrl || `https://picsum.photos/400/600?random=${Date.now()}`,
-          author: author || '匿名作者',
-          category: '小说',
-          word_count: totalWords,
-          chapter_count: chapters.length,
-        }),
-      });
+      const publishData: NovelPublishRequest = {
+        type: 'novel',
+        title,
+        description,
+        cover_url: coverUrl || `https://picsum.photos/400/600?random=${Date.now()}`,
+        chapters: chapters.map(ch => ({
+          chapter_number: ch.chapter_number,
+          title: ch.title,
+          content: ch.content,
+          word_count: ch.word_count,
+        })),
+        total_chapters: chapters.length,
+        word_count: totalWords,
+        category: '小说',
+      };
 
-      if (response.ok) {
-        alert('发布成功！');
-        onSuccess?.();
-      } else {
-        throw new Error('发布失败');
-      }
+      await publishMaterial(publishData);
+      alert('发布成功！');
+      onSuccess?.();
     } catch (error) {
       alert('发布失败，请重试');
     } finally {
@@ -90,10 +126,22 @@ export default function NovelPublisher({ onSuccess }: NovelPublisherProps) {
 
   return (
     <div className="p-4">
+      {/* 隐藏的文件输入 */}
+      <input
+        ref={coverInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleCoverChange}
+        className="hidden"
+      />
+
       {/* 封面 */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">封面</label>
-        <div className="w-24 h-32 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+        <div
+          onClick={handleSelectCover}
+          className="w-24 h-32 bg-gray-100 rounded flex items-center justify-center overflow-hidden cursor-pointer hover:bg-gray-200 transition-colors"
+        >
           {coverUrl ? (
             <img src={coverUrl} alt="" className="w-full h-full object-cover" />
           ) : (
@@ -103,12 +151,6 @@ export default function NovelPublisher({ onSuccess }: NovelPublisherProps) {
             </div>
           )}
         </div>
-        <button
-          onClick={() => setCoverUrl(`https://picsum.photos/400/600?random=${Date.now()}`)}
-          className="mt-2 px-3 py-1 border border-gray-300 rounded text-sm"
-        >
-          选择封面
-        </button>
       </div>
 
       {/* 书名 */}
@@ -152,7 +194,7 @@ export default function NovelPublisher({ onSuccess }: NovelPublisherProps) {
           <label className="text-sm font-medium text-gray-700">
             章节管理 ({chapters.length}章, 共{totalWords}字)
           </label>
-          <button onClick={addChapter} className="text-blue-500 text-sm">
+          <button onClick={addChapter} className="text-blue-500 text-sm hover:text-blue-600">
             + 添加章节
           </button>
         </div>
@@ -163,10 +205,10 @@ export default function NovelPublisher({ onSuccess }: NovelPublisherProps) {
             <button
               key={index}
               onClick={() => setCurrentChapter(index)}
-              className={`flex-shrink-0 px-3 py-1 rounded text-sm ${
+              className={`flex-shrink-0 px-3 py-1 rounded text-sm transition-colors ${
                 currentChapter === index
                   ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-700'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               {ch.title || `第${index + 1}章`}
@@ -187,7 +229,7 @@ export default function NovelPublisher({ onSuccess }: NovelPublisherProps) {
           />
           <button
             onClick={() => removeChapter(currentChapter)}
-            className="ml-2 text-red-500 text-sm"
+            className="ml-2 text-red-500 text-sm hover:text-red-600 disabled:opacity-50"
             disabled={chapters.length === 1}
           >
             删除
@@ -197,10 +239,10 @@ export default function NovelPublisher({ onSuccess }: NovelPublisherProps) {
           value={chapters[currentChapter]?.content || ''}
           onChange={(e) => updateChapter(currentChapter, 'content', e.target.value)}
           placeholder="开始写作..."
-          className="w-full px-3 py-2 border border-gray-200 rounded text-sm min-h-[200px]"
+          className="w-full px-3 py-2 border border-gray-200 rounded text-sm min-h-[200px] focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <div className="text-right text-xs text-gray-400 mt-1">
-          {chapters[currentChapter]?.content.length || 0}字
+          {chapters[currentChapter]?.word_count || 0}字
         </div>
       </div>
 

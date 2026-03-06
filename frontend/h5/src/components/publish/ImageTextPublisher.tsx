@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { publishMaterial, uploadFile, ImageTextPublishRequest } from '@/lib/publishApi';
 
 interface ImageTextPublisherProps {
   onSuccess?: () => void;
@@ -9,20 +10,43 @@ interface ImageTextPublisherProps {
 
 export default function ImageTextPublisher({ onSuccess }: ImageTextPublisherProps) {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  // 添加图片
-  const handleAddImage = () => {
+  // 选择图片
+  const handleSelectImage = () => {
     if (images.length >= 9) {
       alert('最多只能添加9张图片');
       return;
     }
-    // 模拟添加图片
-    const newImage = `https://picsum.photos/800/600?random=${Date.now()}`;
-    setImages([...images, newImage]);
+    fileInputRef.current?.click();
+  };
+
+  // 处理文件选择
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const remainingSlots = 9 - images.length;
+    const filesToUpload = Array.from(files).slice(0, remainingSlots);
+
+    setUploading(true);
+    try {
+      const uploadPromises = filesToUpload.map(file => uploadFile(file, 'image'));
+      const uploadedUrls = await Promise.all(uploadPromises);
+      setImages([...images, ...uploadedUrls]);
+    } catch (error) {
+      alert('图片上传失败，请重试');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   // 删除图片
@@ -43,27 +67,17 @@ export default function ImageTextPublisher({ onSuccess }: ImageTextPublisherProp
 
     setSubmitting(true);
     try {
-      // 调用发布API
-      const response = await fetch('http://localhost:4004/api/v1/material', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'image_text',
-          title,
-          description: content,
-          cover_url: images[0],
-          content_url: JSON.stringify(images),
-          author: '用户发布',
-          category: '图文',
-        }),
-      });
+      const publishData: ImageTextPublishRequest = {
+        type: 'image_text',
+        title,
+        content,
+        images,
+        category: '图文',
+      };
 
-      if (response.ok) {
-        alert('发布成功！');
-        onSuccess?.();
-      } else {
-        throw new Error('发布失败');
-      }
+      await publishMaterial(publishData);
+      alert('发布成功！');
+      onSuccess?.();
     } catch (error) {
       alert('发布失败，请重试');
     } finally {
@@ -73,6 +87,16 @@ export default function ImageTextPublisher({ onSuccess }: ImageTextPublisherProp
 
   return (
     <div className="p-4">
+      {/* 隐藏的文件输入 */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
       {/* 标题输入 */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">标题</label>
@@ -117,13 +141,20 @@ export default function ImageTextPublisher({ onSuccess }: ImageTextPublisherProp
           ))}
           {images.length < 9 && (
             <button
-              onClick={handleAddImage}
-              className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400"
+              onClick={handleSelectImage}
+              disabled={uploading}
+              className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400 disabled:opacity-50"
             >
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span className="text-xs mt-1">添加图片</span>
+              {uploading ? (
+                <div className="w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="text-xs mt-1">添加图片</span>
+                </>
+              )}
             </button>
           )}
         </div>
@@ -132,7 +163,7 @@ export default function ImageTextPublisher({ onSuccess }: ImageTextPublisherProp
       {/* 发布按钮 */}
       <button
         onClick={handleSubmit}
-        disabled={submitting}
+        disabled={submitting || uploading}
         className="w-full py-3 bg-blue-500 text-white rounded-lg font-medium disabled:bg-gray-300"
       >
         {submitting ? '发布中...' : '发布'}

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { publishMaterial, uploadFile, VideoPublishRequest } from '@/lib/publishApi';
 
 interface VideoPublisherProps {
   type: 'short_video' | 'long_video';
@@ -8,13 +9,82 @@ interface VideoPublisherProps {
 }
 
 export default function VideoPublisher({ type, onSuccess }: VideoPublisherProps) {
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [duration, setDuration] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const isShort = type === 'short_video';
+
+  // 选择视频
+  const handleSelectVideo = () => {
+    videoInputRef.current?.click();
+  };
+
+  // 处理视频选择
+  const handleVideoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingVideo(true);
+    setUploadProgress(0);
+
+    try {
+      // 模拟上传进度
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 200);
+
+      const uploadedUrl = await uploadFile(file, 'video');
+      setVideoUrl(uploadedUrl);
+
+      // 获取视频时长
+      const video = document.createElement('video');
+      video.src = URL.createObjectURL(file);
+      video.onloadedmetadata = () => {
+        setDuration(Math.floor(video.duration));
+        URL.revokeObjectURL(video.src);
+      };
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+    } catch (error) {
+      alert('视频上传失败，请重试');
+    } finally {
+      setUploadingVideo(false);
+      if (videoInputRef.current) {
+        videoInputRef.current.value = '';
+      }
+    }
+  };
+
+  // 选择封面
+  const handleSelectCover = () => {
+    coverInputRef.current?.click();
+  };
+
+  // 处理封面上传
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const uploadedUrl = await uploadFile(file, 'image');
+      setCoverUrl(uploadedUrl);
+    } catch (error) {
+      alert('封面上传失败，请重试');
+    } finally {
+      if (coverInputRef.current) {
+        coverInputRef.current.value = '';
+      }
+    }
+  };
 
   // 提交发布
   const handleSubmit = async () => {
@@ -22,30 +92,26 @@ export default function VideoPublisher({ type, onSuccess }: VideoPublisherProps)
       alert('请输入标题');
       return;
     }
+    if (!videoUrl) {
+      alert('请上传视频');
+      return;
+    }
 
     setSubmitting(true);
     try {
-      const response = await fetch('http://localhost:4004/api/v1/material', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type,
-          title,
-          description,
-          cover_url: coverUrl || `https://picsum.photos/800/450?random=${Date.now()}`,
-          content_url: videoUrl || 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-          author: '用户发布',
-          category: isShort ? '短视频' : '长视频',
-          duration: isShort ? 60 : 1800,
-        }),
-      });
+      const publishData: VideoPublishRequest = {
+        type,
+        title,
+        description,
+        cover_url: coverUrl || `https://picsum.photos/800/450?random=${Date.now()}`,
+        video_url: videoUrl,
+        duration: duration || (isShort ? 60 : 1800),
+        category: isShort ? '短视频' : '长视频',
+      };
 
-      if (response.ok) {
-        alert('发布成功！');
-        onSuccess?.();
-      } else {
-        throw new Error('发布失败');
-      }
+      await publishMaterial(publishData);
+      alert('发布成功！');
+      onSuccess?.();
     } catch (error) {
       alert('发布失败，请重试');
     } finally {
@@ -55,42 +121,73 @@ export default function VideoPublisher({ type, onSuccess }: VideoPublisherProps)
 
   return (
     <div className="p-4">
+      {/* 隐藏的文件输入 */}
+      <input
+        ref={videoInputRef}
+        type="file"
+        accept="video/*"
+        onChange={handleVideoChange}
+        className="hidden"
+      />
+      <input
+        ref={coverInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleCoverChange}
+        className="hidden"
+      />
+
       {/* 视频上传区域 */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           {isShort ? '短视频' : '视频文件'}
         </label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-          <div className="text-4xl mb-2">🎬</div>
-          <p className="text-gray-500 text-sm">点击上传视频</p>
-          <p className="text-gray-400 text-xs mt-1">
-            {isShort ? '支持竖屏视频，时长60秒以内' : '支持MP4格式，最大2GB'}
-          </p>
-          <button className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg text-sm">
-            选择视频
-          </button>
+        <div
+          onClick={handleSelectVideo}
+          className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 transition-colors"
+        >
+          {uploadingVideo ? (
+            <div>
+              <div className="w-12 h-12 mx-auto mb-2 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <p className="text-gray-600 text-sm">上传中... {uploadProgress}%</p>
+            </div>
+          ) : videoUrl ? (
+            <div>
+              <div className="text-4xl mb-2">✅</div>
+              <p className="text-green-600 text-sm font-medium">视频已上传</p>
+              {duration > 0 && (
+                <p className="text-gray-500 text-xs mt-1">时长: {Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, '0')}</p>
+              )}
+            </div>
+          ) : (
+            <div>
+              <div className="text-4xl mb-2">🎬</div>
+              <p className="text-gray-500 text-sm">点击上传视频</p>
+              <p className="text-gray-400 text-xs mt-1">
+                {isShort ? '支持竖屏视频，时长60秒以内' : '支持MP4格式，最大2GB'}
+              </p>
+            </div>
+          )}
         </div>
-        {videoUrl && (
-          <div className="mt-2 p-2 bg-gray-100 rounded text-sm text-gray-600">
-            已选择视频文件
-          </div>
-        )}
       </div>
 
       {/* 封面设置 */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">封面</label>
         <div className="flex gap-2">
-          <div className="w-24 h-16 bg-gray-100 rounded flex items-center justify-center text-gray-400">
+          <div
+            onClick={handleSelectCover}
+            className="w-24 h-16 bg-gray-100 rounded flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-200 transition-colors overflow-hidden"
+          >
             {coverUrl ? (
-              <img src={coverUrl} alt="" className="w-full h-full object-cover rounded" />
+              <img src={coverUrl} alt="" className="w-full h-full object-cover" />
             ) : (
               <span className="text-xs">选择封面</span>
             )}
           </div>
           <button
             onClick={() => setCoverUrl(`https://picsum.photos/800/450?random=${Date.now()}`)}
-            className="px-3 py-1 border border-gray-300 rounded text-sm"
+            className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50"
           >
             自动生成
           </button>
@@ -125,7 +222,7 @@ export default function VideoPublisher({ type, onSuccess }: VideoPublisherProps)
       {/* 发布按钮 */}
       <button
         onClick={handleSubmit}
-        disabled={submitting}
+        disabled={submitting || uploadingVideo}
         className="w-full py-3 bg-blue-500 text-white rounded-lg font-medium disabled:bg-gray-300"
       >
         {submitting ? '发布中...' : '发布'}

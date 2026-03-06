@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { publishMaterial, uploadFile, DramaPublishRequest, Episode as EpisodeType } from '@/lib/publishApi';
 
 interface DramaPublisherProps {
   type: 'short_drama' | 'drama';
@@ -8,23 +9,52 @@ interface DramaPublisherProps {
 }
 
 interface Episode {
+  episode_number: number;
   title: string;
-  videoUrl?: string;
+  cover_url?: string;
+  video_url?: string;
   images?: string[];
+  duration?: number;
 }
 
 export default function DramaPublisher({ type, onSuccess }: DramaPublisherProps) {
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
-  const [episodes, setEpisodes] = useState<Episode[]>([{ title: '第1集' }]);
+  const [episodes, setEpisodes] = useState<Episode[]>([{ episode_number: 1, title: '第1集' }]);
   const [submitting, setSubmitting] = useState(false);
 
   const isDrama = type === 'drama';
 
+  // 选择封面
+  const handleSelectCover = () => {
+    coverInputRef.current?.click();
+  };
+
+  // 处理封面上传
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const uploadedUrl = await uploadFile(file, 'image');
+      setCoverUrl(uploadedUrl);
+    } catch (error) {
+      alert('封面上传失败，请重试');
+    } finally {
+      if (coverInputRef.current) {
+        coverInputRef.current.value = '';
+      }
+    }
+  };
+
   // 添加剧集
   const addEpisode = () => {
-    setEpisodes([...episodes, { title: `第${episodes.length + 1}集` }]);
+    setEpisodes([...episodes, {
+      episode_number: episodes.length + 1,
+      title: `第${episodes.length + 1}集`
+    }]);
   };
 
   // 删除剧集
@@ -41,6 +71,22 @@ export default function DramaPublisher({ type, onSuccess }: DramaPublisherProps)
     setEpisodes(newEpisodes);
   };
 
+  // 上传剧集视频/图片
+  const handleEpisodeUpload = async (index: number, file: File) => {
+    try {
+      const uploadedUrl = await uploadFile(file, isDrama ? 'image' : 'video');
+
+      if (isDrama) {
+        const currentImages = episodes[index].images || [];
+        updateEpisode(index, 'images', [...currentImages, uploadedUrl]);
+      } else {
+        updateEpisode(index, 'video_url', uploadedUrl);
+      }
+    } catch (error) {
+      alert('上传失败，请重试');
+    }
+  };
+
   // 提交发布
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -50,26 +96,26 @@ export default function DramaPublisher({ type, onSuccess }: DramaPublisherProps)
 
     setSubmitting(true);
     try {
-      const response = await fetch('http://localhost:4004/api/v1/material', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type,
-          title,
-          description,
-          cover_url: coverUrl || `https://picsum.photos/400/600?random=${Date.now()}`,
-          author: '用户发布',
-          category: isDrama ? '漫剧' : '短剧',
-          chapter_count: episodes.length,
-        }),
-      });
+      const publishData: DramaPublishRequest = {
+        type,
+        title,
+        description,
+        cover_url: coverUrl || `https://picsum.photos/400/600?random=${Date.now()}`,
+        episodes: episodes.map(ep => ({
+          episode_number: ep.episode_number,
+          title: ep.title,
+          cover_url: ep.cover_url,
+          video_url: ep.video_url,
+          images: ep.images,
+          duration: ep.duration,
+        })),
+        total_episodes: episodes.length,
+        category: isDrama ? '漫剧' : '短剧',
+      };
 
-      if (response.ok) {
-        alert('发布成功！');
-        onSuccess?.();
-      } else {
-        throw new Error('发布失败');
-      }
+      await publishMaterial(publishData);
+      alert('发布成功！');
+      onSuccess?.();
     } catch (error) {
       alert('发布失败，请重试');
     } finally {
@@ -79,10 +125,22 @@ export default function DramaPublisher({ type, onSuccess }: DramaPublisherProps)
 
   return (
     <div className="p-4">
+      {/* 隐藏的文件输入 */}
+      <input
+        ref={coverInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleCoverChange}
+        className="hidden"
+      />
+
       {/* 封面 */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">封面</label>
-        <div className="w-32 h-44 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+        <div
+          onClick={handleSelectCover}
+          className="w-32 h-44 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden cursor-pointer hover:bg-gray-200 transition-colors"
+        >
           {coverUrl ? (
             <img src={coverUrl} alt="" className="w-full h-full object-cover" />
           ) : (
@@ -92,12 +150,6 @@ export default function DramaPublisher({ type, onSuccess }: DramaPublisherProps)
             </div>
           )}
         </div>
-        <button
-          onClick={() => setCoverUrl(`https://picsum.photos/400/600?random=${Date.now()}`)}
-          className="mt-2 px-3 py-1 border border-gray-300 rounded text-sm"
-        >
-          选择封面
-        </button>
       </div>
 
       {/* 标题 */}
@@ -133,27 +185,63 @@ export default function DramaPublisher({ type, onSuccess }: DramaPublisherProps)
           </label>
           <button
             onClick={addEpisode}
-            className="text-blue-500 text-sm"
+            className="text-blue-500 text-sm hover:text-blue-600"
           >
             + 添加{isDrama ? '话' : '集'}
           </button>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {episodes.map((ep, index) => (
-            <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-              <input
-                type="text"
-                value={ep.title}
-                onChange={(e) => updateEpisode(index, 'title', e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded text-sm"
-              />
-              <button
-                onClick={() => removeEpisode(index)}
-                className="text-red-500 text-sm"
-                disabled={episodes.length === 1}
-              >
-                删除
-              </button>
+            <div key={index} className="p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <input
+                  type="text"
+                  value={ep.title}
+                  onChange={(e) => updateEpisode(index, 'title', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded text-sm"
+                  placeholder="集名"
+                />
+                <button
+                  onClick={() => removeEpisode(index)}
+                  className="text-red-500 text-sm hover:text-red-600 disabled:opacity-50"
+                  disabled={episodes.length === 1}
+                >
+                  删除
+                </button>
+              </div>
+
+              {/* 上传按钮 */}
+              <label className="block">
+                <input
+                  type="file"
+                  accept={isDrama ? 'image/*' : 'video/*'}
+                  multiple={isDrama}
+                  onChange={(e) => {
+                    const files = e.target.files;
+                    if (files) {
+                      Array.from(files).forEach(file => handleEpisodeUpload(index, file));
+                    }
+                  }}
+                  className="hidden"
+                />
+                <div className="px-3 py-2 border border-dashed border-gray-300 rounded text-center text-sm text-gray-500 cursor-pointer hover:border-blue-400">
+                  {isDrama ? '📷 上传图片' : '🎬 上传视频'}
+                </div>
+              </label>
+
+              {/* 已上传内容显示 */}
+              {isDrama && ep.images && ep.images.length > 0 && (
+                <div className="mt-2 flex gap-1 flex-wrap">
+                  {ep.images.map((img, imgIndex) => (
+                    <div key={imgIndex} className="w-12 h-12 rounded overflow-hidden">
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!isDrama && ep.video_url && (
+                <div className="mt-2 text-xs text-green-600">✓ 视频已上传</div>
+              )}
             </div>
           ))}
         </div>
