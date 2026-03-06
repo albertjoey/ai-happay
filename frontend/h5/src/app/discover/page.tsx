@@ -1,47 +1,44 @@
 'use client';
 
-import { useState } from 'react';
-
-// 热门话题数据
-const hotTopics = [
-  { id: 1, name: '周末美食打卡', count: '12.5万', color: '#FF6B6B' },
-  { id: 2, name: '旅行日记', count: '8.3万', color: '#4ECDC4' },
-  { id: 3, name: '宠物萌照', count: '6.7万', color: '#45B7D1' },
-  { id: 4, name: '健身打卡', count: '5.2万', color: '#96CEB4' },
-  { id: 5, name: '穿搭分享', count: '4.8万', color: '#FFEAA7' },
-  { id: 6, name: '游戏日常', count: '3.9万', color: '#DDA0DD' },
-];
-
-// 热门榜单数据
-const hotRankItems = [
-  { id: 1, title: '今日份美食分享', author: '美食达人小王', views: '128万', color: '#FF6B6B' },
-  { id: 2, title: '周末旅行vlog', author: '旅行者小李', views: '96万', color: '#4ECDC4' },
-  { id: 3, title: '我家猫咪的一天', author: '猫奴小张', views: '85万', color: '#45B7D1' },
-  { id: 4, title: '健身30天挑战', author: '健身教练', views: '72万', color: '#96CEB4' },
-  { id: 5, title: '春季穿搭指南', author: '时尚博主', views: '68万', color: '#FFEAA7' },
-];
-
-// 推荐创作者
-const recommendCreators = [
-  { id: 1, name: '美食达人小王', avatar: '👨‍🍳', fans: '52.3万', desc: '分享美食日常', color: '#FF6B6B' },
-  { id: 2, name: '旅行者小李', avatar: '🌍', fans: '38.7万', desc: '环游世界ing', color: '#4ECDC4' },
-  { id: 3, name: '猫奴小张', avatar: '🐱', fans: '29.1万', desc: '两只猫的铲屎官', color: '#45B7D1' },
-  { id: 4, name: '健身教练', avatar: '💪', fans: '45.6万', desc: '专业健身指导', color: '#96CEB4' },
-];
-
-// 猜你喜欢数据
-const guessYouLike = [
-  { id: 1, title: '超简单的家常菜做法', author: '美食达人', views: '23万', color: '#FF6B6B' },
-  { id: 2, title: '一个人的旅行', author: '旅行者', views: '18万', color: '#4ECDC4' },
-  { id: 3, title: '猫咪搞笑瞬间', author: '猫奴', views: '45万', color: '#45B7D1' },
-  { id: 4, title: '居家健身教程', author: '健身教练', views: '32万', color: '#96CEB4' },
-  { id: 5, title: '春季穿搭推荐', author: '时尚博主', views: '28万', color: '#FFEAA7' },
-  { id: 6, title: '游戏精彩操作', author: '游戏玩家', views: '56万', color: '#DDA0DD' },
-];
+import { useState, useEffect } from 'react';
+import { getDiscoverPage, DiscoverModule } from '@/lib/discoverApi';
 
 export default function DiscoverPage() {
   const [activeTab, setActiveTab] = useState<'day' | 'week'>('day');
   const [followedCreators, setFollowedCreators] = useState<number[]>([]);
+  const [modules, setModules] = useState<DiscoverModule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
+
+  useEffect(() => {
+    loadDiscoverData();
+  }, []);
+
+  const loadDiscoverData = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      console.log('开始加载发现页数据...');
+      const data = await getDiscoverPage();
+      console.log('发现页数据:', data);
+      console.log('模块数量:', data.modules?.length);
+      
+      if (data && data.modules && data.modules.length > 0) {
+        console.log('设置modules状态,数量:', data.modules.length);
+        setModules(data.modules);
+        console.log('数据设置完成');
+      } else {
+        console.log('没有获取到数据或数据为空');
+        setError('没有获取到数据');
+      }
+    } catch (error: any) {
+      console.error('加载发现页数据失败:', error);
+      setError('加载失败: ' + (error.message || '未知错误'));
+    } finally {
+      setLoading(false);
+      console.log('加载完成,loading设置为false');
+    }
+  };
 
   const toggleFollow = (creatorId: number) => {
     if (followedCreators.includes(creatorId)) {
@@ -51,6 +48,17 @@ export default function DiscoverPage() {
     }
   };
 
+  // 根据模块名获取数据
+  const getModuleData = (moduleName: string) => {
+    const module = modules.find(m => m.module === moduleName);
+    return module?.items || [];
+  };
+
+  const hotTopics = getModuleData('hot_topics');
+  const hotRankItems = getModuleData('hot_rank');
+  const recommendCreators = getModuleData('recommend_creators');
+  const guessYouLike = getModuleData('guess_you_like');
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* 顶部标题 */}
@@ -58,130 +66,198 @@ export default function DiscoverPage() {
         <h1 className="text-xl font-bold text-center">发现</h1>
       </header>
 
-      {/* 热门话题 */}
-      <section className="bg-white mt-2 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold">🔥 热门话题</h2>
-          <button className="text-sm text-gray-500">更多 &gt;</button>
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-gray-400">加载中...</div>
         </div>
-        <div className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {hotTopics.map(topic => (
-            <div key={topic.id} className="flex-shrink-0 w-24">
-              <div 
-                className="w-24 h-24 rounded-lg mb-1 flex items-center justify-center text-white text-2xl font-bold"
-                style={{ backgroundColor: topic.color }}
-              >
-                {topic.name.slice(0, 2)}
+      ) : modules.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="text-gray-400 mb-4">暂无内容</div>
+          <button
+            onClick={loadDiscoverData}
+            className="px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            重新加载
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* 热门话题 */}
+          {hotTopics.length > 0 && (
+            <section className="bg-white mt-2 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-bold">🔥 热门话题</h2>
+                <button className="text-sm text-gray-500">更多 &gt;</button>
               </div>
-              <p className="text-xs font-medium truncate">{topic.name}</p>
-              <p className="text-xs text-gray-400">{topic.count}参与</p>
-            </div>
-          ))}
-        </div>
-      </section>
+              <div className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {hotTopics.map((topic: any) => (
+                  <div key={topic.id} className="flex-shrink-0 w-24">
+                    <div 
+                      className="w-24 h-24 rounded-lg mb-1 overflow-hidden relative"
+                    >
+                      {topic.cover_url ? (
+                        <img 
+                          src={topic.cover_url} 
+                          alt={topic.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div 
+                          className="w-full h-full flex items-center justify-center text-white text-2xl font-bold"
+                          style={{ backgroundColor: topic.color || '#FF6B6B' }}
+                        >
+                          {topic.title.slice(0, 2)}
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs font-medium truncate">{topic.title}</p>
+                    <p className="text-xs text-gray-400">{topic.count || '0'}参与</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
-      {/* 热门榜单 */}
-      <section className="bg-white mt-2 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold">🏆 热门榜单</h2>
-          <div className="flex gap-2">
-            <button 
-              onClick={() => setActiveTab('day')}
-              className={`px-3 py-1 text-xs rounded-full ${activeTab === 'day' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
-            >
-              日榜
-            </button>
-            <button 
-              onClick={() => setActiveTab('week')}
-              className={`px-3 py-1 text-xs rounded-full ${activeTab === 'week' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
-            >
-              周榜
-            </button>
-          </div>
-        </div>
-        <div className="space-y-3">
-          {hotRankItems.map((item, index) => (
-            <div key={item.id} className="flex items-center gap-3">
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                index < 3 ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' : 'bg-gray-200 text-gray-600'
-              }`}>
-                {index + 1}
-              </span>
-              <div 
-                className="w-16 h-20 rounded flex-shrink-0 flex items-center justify-center text-white text-lg font-bold"
-                style={{ backgroundColor: item.color }}
-              >
-                {item.title.slice(0, 2)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{item.title}</p>
-                <p className="text-xs text-gray-500">{item.author}</p>
-                <p className="text-xs text-gray-400">{item.views}次播放</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 推荐创作者 */}
-      <section className="bg-white mt-2 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold">⭐ 推荐创作者</h2>
-          <button className="text-sm text-gray-500">换一批</button>
-        </div>
-        <div className="flex gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {recommendCreators.map(creator => (
-            <div key={creator.id} className="flex-shrink-0 w-28 text-center">
-              <div 
-                className="w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-3xl"
-                style={{ backgroundColor: creator.color + '30', border: `2px solid ${creator.color}` }}
-              >
-                {creator.avatar}
-              </div>
-              <p className="text-sm font-medium truncate">{creator.name}</p>
-              <p className="text-xs text-gray-400 truncate">{creator.desc}</p>
-              <p className="text-xs text-gray-400">{creator.fans}粉丝</p>
-              <button 
-                onClick={() => toggleFollow(creator.id)}
-                className={`mt-2 px-4 py-1 text-xs rounded-full ${
-                  followedCreators.includes(creator.id) 
-                    ? 'bg-gray-200 text-gray-600' 
-                    : 'bg-blue-500 text-white'
-                }`}
-              >
-                {followedCreators.includes(creator.id) ? '已关注' : '关注'}
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 猜你喜欢 */}
-      <section className="bg-white mt-2 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold">💡 猜你喜欢</h2>
-          <button className="text-sm text-gray-500">刷新</button>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {guessYouLike.map(item => (
-            <div key={item.id} className="bg-gray-50 rounded-lg overflow-hidden">
-              <div 
-                className="aspect-[3/4] flex items-center justify-center text-white text-xl font-bold"
-                style={{ backgroundColor: item.color }}
-              >
-                {item.title.slice(0, 2)}
-              </div>
-              <div className="p-2">
-                <p className="text-sm font-medium truncate">{item.title}</p>
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-xs text-gray-500">{item.author}</span>
-                  <span className="text-xs text-gray-400">{item.views}次</span>
+          {/* 热门榜单 */}
+          {hotRankItems.length > 0 && (
+            <section className="bg-white mt-2 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-bold">🏆 热门榜单</h2>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setActiveTab('day')}
+                    className={`px-3 py-1 text-xs rounded-full ${activeTab === 'day' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+                  >
+                    日榜
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('week')}
+                    className={`px-3 py-1 text-xs rounded-full ${activeTab === 'week' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+                  >
+                    周榜
+                  </button>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+              <div className="space-y-3">
+                {hotRankItems.map((item: any, index: number) => (
+                  <div key={item.id} className="flex items-center gap-3">
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                      index < 3 ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {index + 1}
+                    </span>
+                    <div className="w-16 h-20 rounded flex-shrink-0 overflow-hidden">
+                      {item.cover_url ? (
+                        <img 
+                          src={item.cover_url} 
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div 
+                          className="w-full h-full flex items-center justify-center text-white text-lg font-bold"
+                          style={{ backgroundColor: item.color || '#FF6B6B' }}
+                        >
+                          {item.title.slice(0, 2)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{item.title}</p>
+                      <p className="text-xs text-gray-500">{item.author || '未知作者'}</p>
+                      <p className="text-xs text-gray-400">{item.views || '0'}次播放</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* 推荐创作者 */}
+          {recommendCreators.length > 0 && (
+            <section className="bg-white mt-2 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-bold">⭐ 推荐创作者</h2>
+                <button className="text-sm text-gray-500">换一批</button>
+              </div>
+              <div className="flex gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {recommendCreators.map((creator: any) => (
+                  <div key={creator.id} className="flex-shrink-0 w-28 text-center">
+                    <div className="w-16 h-16 rounded-full mx-auto mb-2 overflow-hidden">
+                      {creator.cover_url ? (
+                        <img 
+                          src={creator.cover_url} 
+                          alt={creator.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div 
+                          className="w-full h-full flex items-center justify-center text-3xl"
+                          style={{ backgroundColor: (creator.color || '#FF6B6B') + '30', border: `2px solid ${creator.color || '#FF6B6B'}` }}
+                        >
+                          {creator.avatar || '👤'}
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-sm font-medium truncate">{creator.title}</p>
+                    <p className="text-xs text-gray-400 truncate">{creator.desc || ''}</p>
+                    <p className="text-xs text-gray-400">{creator.fans || '0'}粉丝</p>
+                    <button 
+                      onClick={() => toggleFollow(creator.id)}
+                      className={`mt-2 px-4 py-1 text-xs rounded-full ${
+                        followedCreators.includes(creator.id) 
+                          ? 'bg-gray-200 text-gray-600' 
+                          : 'bg-blue-500 text-white'
+                      }`}
+                    >
+                      {followedCreators.includes(creator.id) ? '已关注' : '关注'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* 猜你喜欢 */}
+          {guessYouLike.length > 0 && (
+            <section className="bg-white mt-2 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-bold">💡 猜你喜欢</h2>
+                <button onClick={loadDiscoverData} className="text-sm text-gray-500">刷新</button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {guessYouLike.map((item: any) => (
+                  <div key={item.id} className="bg-gray-50 rounded-lg overflow-hidden">
+                    <div className="aspect-[3/4] overflow-hidden">
+                      {item.cover_url ? (
+                        <img 
+                          src={item.cover_url} 
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div 
+                          className="w-full h-full flex items-center justify-center text-white text-xl font-bold"
+                          style={{ backgroundColor: item.color || '#FF6B6B' }}
+                        >
+                          {item.title.slice(0, 2)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-2">
+                      <p className="text-sm font-medium truncate">{item.title}</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-xs text-gray-500">{item.author || '未知'}</span>
+                        <span className="text-xs text-gray-400">{item.views || '0'}次</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </>
+      )}
 
       {/* 底部导航 */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">

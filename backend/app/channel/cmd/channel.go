@@ -615,3 +615,69 @@ func registerRoutes(server *rest.Server, ctx *svc.ServiceContext) {
 		},
 	)
 }
+
+	// ==================== 发现页API ====================
+	
+	// 获取发现页完整数据
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/discover",
+			Handler: handler.GetDiscoverPageHandler(ctx),
+		},
+	)
+	
+	// 获取发现页配置列表
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/discover/config",
+			Handler: handler.GetDiscoverConfigListHandler(ctx),
+		},
+	)
+	
+	// 更新发现页配置
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPut,
+			Path:    "/api/v1/discover/config/:id",
+			Handler: handler.UpdateDiscoverConfigHandler(ctx),
+		},
+	)
+	
+	// 获取发现页内容列表
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/discover/items",
+			Handler: handler.GetDiscoverItemListHandler(ctx),
+		},
+	)
+	
+	// 创建发现页内容
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPost,
+			Path:    "/api/v1/discover/items",
+			Handler: handler.CreateDiscoverItemHandler(ctx),
+		},
+	)
+	
+	// 更新发现页内容
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPut,
+			Path:    "/api/v1/discover/items/:id",
+			Handler: handler.UpdateDiscoverItemHandler(ctx),
+		},
+	)
+	
+	// 删除发现页内容
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodDelete,
+			Path:    "/api/v1/discover/items/:id",
+			Handler: handler.DeleteDiscoverItemHandler(ctx),
+		},
+	)
+}
