@@ -50,6 +50,26 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '标签管理', icon: 'TagsOutlined' },
       },
       {
+        path: 'discover',
+        name: 'Discover',
+        redirect: '/discover/config',
+        meta: { title: '发现页管理', icon: 'CompassOutlined' },
+        children: [
+          {
+            path: 'config',
+            name: 'DiscoverConfig',
+            component: () => import('@/views/discover/ConfigList.vue'),
+            meta: { title: '模块配置' },
+          },
+          {
+            path: 'items',
+            name: 'DiscoverItems',
+            component: () => import('@/views/discover/ItemList.vue'),
+            meta: { title: '内容管理' },
+          },
+        ],
+      },
+      {
         path: 'channel',
         name: 'Channel',
         meta: { title: '频道管理', icon: 'AppstoreOutlined' },

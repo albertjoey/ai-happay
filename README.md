@@ -180,6 +180,11 @@ docs/
 |:---:|:---:|:---:|
 | ![短剧详情](./images/h5/short_play_detail.png) | ![视频内容](./images/h5/video.png) | ![视频详情](./images/h5/video_detail.png) |
 
+
+| 发现页面 | -- | -- |
+|:---:|:---:|:---:|
+| ![发现页面](./images/h5/short_play_detail.png) | ![视频内容](./images/h5/video.png) | ![视频详情](./images/h5/video_detail.png) |
+
 #### 管理后台
 
 | 用户管理 | 内容管理 | 短剧详情 |

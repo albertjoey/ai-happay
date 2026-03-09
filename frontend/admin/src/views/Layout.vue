@@ -31,6 +31,14 @@
           <tags-outlined />
           <span>标签管理</span>
         </a-menu-item>
+        <a-sub-menu key="discover">
+          <template #icon>
+            <compass-outlined />
+          </template>
+          <template #title>发现页管理</template>
+          <a-menu-item key="discover-config">模块配置</a-menu-item>
+          <a-menu-item key="discover-items">内容管理</a-menu-item>
+        </a-sub-menu>
         <a-sub-menu key="channel">
           <template #icon>
             <appstore-outlined />
@@ -98,6 +106,7 @@ import {
   TagsOutlined,
   AppstoreOutlined,
   SettingOutlined,
+  CompassOutlined,
 } from '@ant-design/icons-vue';
 
 const router = useRouter();
@@ -114,6 +123,9 @@ const handleMenuClick = ({ key }: { key: string }) => {
   } else if (key.startsWith('system-')) {
     const path = key.replace('system-', '');
     router.push(`/system/${path}`);
+  } else if (key.startsWith('discover-')) {
+    const path = key.replace('discover-', '');
+    router.push(`/discover/${path}`);
   } else {
     router.push(`/${key}`);
   }
