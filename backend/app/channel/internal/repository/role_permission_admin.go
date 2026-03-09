@@ -110,14 +110,45 @@ func NewPermissionRepository(db *gorm.DB) PermissionRepository {
 }
 
 func (r *permissionRepository) List(ctx context.Context) ([]types.Permission, error) {
-	var permissions []types.Permission
+	// 使用中间结构体避免GORM映射Children字段的问题
+	type permissionRow struct {
+		ID       uint
+		Name     string
+		Code     string
+		Type     string
+		ParentID uint
+		Path     string
+		Icon     string
+		Status   int8
+	}
+
+	var rows []permissionRow
 	err := r.db.WithContext(ctx).Raw(`
 		SELECT id, name, code, type, parent_id, path, icon, status
 		FROM permission
 		WHERE deleted_at IS NULL
 		ORDER BY id ASC
-	`).Scan(&permissions).Error
-	return permissions, err
+	`).Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 转换为types.Permission
+	permissions := make([]types.Permission, len(rows))
+	for i, row := range rows {
+		permissions[i] = types.Permission{
+			ID:       row.ID,
+			Name:     row.Name,
+			Code:     row.Code,
+			Type:     row.Type,
+			ParentID: row.ParentID,
+			Path:     row.Path,
+			Icon:     row.Icon,
+			Status:   row.Status,
+		}
+	}
+
+	return permissions, nil
 }
 
 func (r *permissionRepository) Create(ctx context.Context, permission *types.Permission) error {
@@ -157,7 +188,7 @@ func (r *adminUserRepository) List(ctx context.Context, req *types.AdminUserList
 
 	offset := (req.Page - 1) * req.PageSize
 	err := r.db.WithContext(ctx).Raw(`
-		SELECT id, username, nickname, email, phone, status, created_at
+		SELECT id, username, realname, email, phone, status, created_at
 		FROM admin_user
 		WHERE deleted_at IS NULL
 		ORDER BY id ASC
@@ -170,7 +201,7 @@ func (r *adminUserRepository) List(ctx context.Context, req *types.AdminUserList
 func (r *adminUserRepository) FindByID(ctx context.Context, id uint) (*types.AdminUser, error) {
 	var admin types.AdminUser
 	err := r.db.WithContext(ctx).Raw(`
-		SELECT id, username, nickname, email, phone, status
+		SELECT id, username, realname, email, phone, status
 		FROM admin_user
 		WHERE id = ? AND deleted_at IS NULL
 	`, id).Scan(&admin).Error
@@ -183,7 +214,7 @@ func (r *adminUserRepository) FindByID(ctx context.Context, id uint) (*types.Adm
 func (r *adminUserRepository) FindByUsername(ctx context.Context, username string) (*types.AdminUser, error) {
 	var admin types.AdminUser
 	err := r.db.WithContext(ctx).Raw(`
-		SELECT id, username, password, nickname, email, phone, status
+		SELECT id, username, password, realname, email, phone, status
 		FROM admin_user
 		WHERE username = ? AND deleted_at IS NULL
 	`, username).Scan(&admin).Error
