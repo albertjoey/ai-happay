@@ -188,7 +188,7 @@ func (r *adminUserRepository) List(ctx context.Context, req *types.AdminUserList
 
 	offset := (req.Page - 1) * req.PageSize
 	err := r.db.WithContext(ctx).Raw(`
-		SELECT id, username, realname, email, phone, status, created_at
+		SELECT id, username, nickname as realname, email, phone, status, created_at
 		FROM admin_user
 		WHERE deleted_at IS NULL
 		ORDER BY id ASC
@@ -201,7 +201,7 @@ func (r *adminUserRepository) List(ctx context.Context, req *types.AdminUserList
 func (r *adminUserRepository) FindByID(ctx context.Context, id uint) (*types.AdminUser, error) {
 	var admin types.AdminUser
 	err := r.db.WithContext(ctx).Raw(`
-		SELECT id, username, realname, email, phone, status
+		SELECT id, username, nickname as realname, email, phone, status
 		FROM admin_user
 		WHERE id = ? AND deleted_at IS NULL
 	`, id).Scan(&admin).Error
@@ -214,7 +214,7 @@ func (r *adminUserRepository) FindByID(ctx context.Context, id uint) (*types.Adm
 func (r *adminUserRepository) FindByUsername(ctx context.Context, username string) (*types.AdminUser, error) {
 	var admin types.AdminUser
 	err := r.db.WithContext(ctx).Raw(`
-		SELECT id, username, password, realname, email, phone, status
+		SELECT id, username, password, nickname as realname, email, phone, status
 		FROM admin_user
 		WHERE username = ? AND deleted_at IS NULL
 	`, username).Scan(&admin).Error
@@ -228,14 +228,14 @@ func (r *adminUserRepository) Create(ctx context.Context, admin *types.AdminUser
 	now := time.Now()
 	// 注意：密码应该在Logic层加密后传入
 	return r.db.WithContext(ctx).Exec(`
-		INSERT INTO admin_user (username, realname, email, phone, status, created_at, updated_at)
+		INSERT INTO admin_user (username, nickname, email, phone, status, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`, admin.Username, admin.Realname, admin.Email, admin.Phone, admin.Status, now, now).Error
 }
 
 func (r *adminUserRepository) Update(ctx context.Context, admin *types.AdminUser) error {
 	return r.db.WithContext(ctx).Exec(`
-		UPDATE admin_user SET realname = ?, email = ?, phone = ?, status = ?, updated_at = ?
+		UPDATE admin_user SET nickname = ?, email = ?, phone = ?, status = ?, updated_at = ?
 		WHERE id = ? AND deleted_at IS NULL
 	`, admin.Realname, admin.Email, admin.Phone, admin.Status, time.Now(), admin.ID).Error
 }

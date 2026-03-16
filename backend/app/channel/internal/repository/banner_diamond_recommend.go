@@ -121,7 +121,7 @@ func NewAdSlotRepository(db *gorm.DB) AdSlotRepository {
 func (r *adSlotRepository) List(ctx context.Context, channelID uint) ([]types.AdSlot, error) {
 	var adSlots []types.AdSlot
 	err := r.db.WithContext(ctx).Raw(`
-		SELECT id, channel_id, name, insert_type, insert_rule, ad_type, ad_content, link_url, sort, description
+		SELECT id, channel_id, name, insert_type, insert_rule, ad_type, ad_content, image_url, link_url, status, sort, description
 		FROM ad_slot
 		WHERE channel_id = ? AND deleted_at IS NULL
 		ORDER BY sort ASC
@@ -184,37 +184,37 @@ func NewInteractionRepository(db *gorm.DB) InteractionRepository {
 
 func (r *interactionRepository) Like(ctx context.Context, userID, materialID uint) error {
 	return r.db.WithContext(ctx).Exec(`
-		INSERT INTO user_like (user_id, material_id, created_at)
-		VALUES (?, ?, NOW())
-		ON DUPLICATE KEY UPDATE deleted_at = NULL
+		INSERT INTO user_like (user_id, target_id, target_type, status, created_at)
+		VALUES (?, ?, 'material', 1, NOW())
+		ON DUPLICATE KEY UPDATE status = 1
 	`, userID, materialID).Error
 }
 
 func (r *interactionRepository) Unlike(ctx context.Context, userID, materialID uint) error {
 	return r.db.WithContext(ctx).Exec(`
-		UPDATE user_like SET deleted_at = NOW()
-		WHERE user_id = ? AND material_id = ?
+		UPDATE user_like SET status = 0
+		WHERE user_id = ? AND target_id = ? AND target_type = 'material'
 	`, userID, materialID).Error
 }
 
 func (r *interactionRepository) Collect(ctx context.Context, userID, materialID uint) error {
 	return r.db.WithContext(ctx).Exec(`
-		INSERT INTO user_collect (user_id, material_id, created_at)
-		VALUES (?, ?, NOW())
-		ON DUPLICATE KEY UPDATE deleted_at = NULL
+		INSERT INTO user_collect (user_id, target_id, target_type, status, created_at)
+		VALUES (?, ?, 'material', 1, NOW())
+		ON DUPLICATE KEY UPDATE status = 1
 	`, userID, materialID).Error
 }
 
 func (r *interactionRepository) Uncollect(ctx context.Context, userID, materialID uint) error {
 	return r.db.WithContext(ctx).Exec(`
-		UPDATE user_collect SET deleted_at = NOW()
-		WHERE user_id = ? AND material_id = ?
+		UPDATE user_collect SET status = 0
+		WHERE user_id = ? AND target_id = ? AND target_type = 'material'
 	`, userID, materialID).Error
 }
 
 func (r *interactionRepository) Comment(ctx context.Context, userID, materialID uint, content string, parentID uint) error {
 	return r.db.WithContext(ctx).Exec(`
-		INSERT INTO comment (user_id, material_id, content, parent_id, created_at)
+		INSERT INTO comment (user_id, content_id, content, parent_id, created_at)
 		VALUES (?, ?, ?, ?, NOW())
 	`, userID, materialID, content, parentID).Error
 }
@@ -225,14 +225,14 @@ func (r *interactionRepository) GetComments(ctx context.Context, materialID uint
 
 	r.db.WithContext(ctx).Raw(`
 		SELECT COUNT(*) FROM comment 
-		WHERE material_id = ? AND parent_id = 0 AND deleted_at IS NULL
+		WHERE content_id = ? AND parent_id = 0 AND deleted_at IS NULL
 	`, materialID).Scan(&total)
 
 	offset := (page - 1) * pageSize
 	err := r.db.WithContext(ctx).Raw(`
-		SELECT id, user_id, material_id, content, parent_id, like_count, created_at
+		SELECT id, user_id, content_id, content, parent_id, like_count, created_at
 		FROM comment
-		WHERE material_id = ? AND parent_id = 0 AND deleted_at IS NULL
+		WHERE content_id = ? AND parent_id = 0 AND deleted_at IS NULL
 		ORDER BY created_at DESC
 		LIMIT ? OFFSET ?
 	`, materialID, pageSize, offset).Scan(&comments).Error
@@ -244,7 +244,7 @@ func (r *interactionRepository) IsLiked(ctx context.Context, userID, materialID 
 	var count int64
 	r.db.WithContext(ctx).Raw(`
 		SELECT COUNT(*) FROM user_like
-		WHERE user_id = ? AND material_id = ? AND deleted_at IS NULL
+		WHERE user_id = ? AND target_id = ? AND target_type = 'material' AND status = 1
 	`, userID, materialID).Scan(&count)
 	return count > 0, nil
 }
@@ -253,7 +253,7 @@ func (r *interactionRepository) IsCollected(ctx context.Context, userID, materia
 	var count int64
 	r.db.WithContext(ctx).Raw(`
 		SELECT COUNT(*) FROM user_collect
-		WHERE user_id = ? AND material_id = ? AND deleted_at IS NULL
+		WHERE user_id = ? AND target_id = ? AND target_type = 'material' AND status = 1
 	`, userID, materialID).Scan(&count)
 	return count > 0, nil
 }

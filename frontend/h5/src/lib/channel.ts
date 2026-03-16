@@ -59,14 +59,21 @@ export interface ChannelListResponse {
 // 获取频道列表
 export async function getChannelList(): Promise<ChannelListResponse> {
   try {
-    const response = await axios.get(`${API_BASE}/api/v1/channel/list`, {
-      params: {
-        page: 1,
-        page_size: 20,
-        status: 1, // 只获取启用的频道
-      },
-    });
-    return response.data;
+    const response = await axios.get(`${API_BASE}/api/v1/channel/list`);
+    // 从channel/list接口获取channels
+    const channels = response.data.list || [];
+    return {
+      total: channels.length,
+      list: channels.map((ch: any) => ({
+        id: ch.id,
+        name: ch.name,
+        code: ch.code,
+        description: ch.description || ch.code,
+        icon: ch.icon || '',
+        status: ch.status || 1,
+        sort: ch.sort || ch.id,
+      }))
+    };
   } catch (error) {
     console.error('获取频道列表失败:', error);
     return { total: 0, list: [] };
@@ -80,6 +87,7 @@ export async function getChannelConfig(channelId: number): Promise<ChannelConfig
     return response.data;
   } catch (error) {
     console.error('获取频道配置失败:', error);
+    // 返回默认配置
     return {
       channel_id: channelId,
       content_type: { video: true, image: true, article: true },
@@ -87,7 +95,7 @@ export async function getChannelConfig(channelId: number): Promise<ChannelConfig
       custom_data: {},
       page_config: {
         banner: { enabled: true },
-        diamond: { enabled: true, group_ids: [1] },
+        diamond: { enabled: true },
         recommends: [],
         feed: { enabled: true, auto_load: true, show_title: true },
       },

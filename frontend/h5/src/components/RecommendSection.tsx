@@ -25,8 +25,17 @@ export default function RecommendSection({ channelId, recommendId, customTitle }
     
     // 如果指定了推荐位ID，只显示该推荐位
     if (recommendId) {
-      const filtered = data.filter(r => r.id === recommendId);
-      setRecommends(filtered);
+      // 使用sort字段匹配，因为配置中的id是序号
+      const filtered = data.filter(r => r.sort === recommendId);
+      if (filtered.length > 0) {
+        setRecommends(filtered);
+      } else {
+        // 如果按sort找不到，尝试按标题匹配
+        const titleMatch = data.filter(r => 
+          customTitle && r.title === customTitle
+        );
+        setRecommends(titleMatch.length > 0 ? titleMatch : data.slice(0, 1));
+      }
     } else {
       setRecommends(data);
     }

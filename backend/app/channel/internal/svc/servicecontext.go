@@ -35,12 +35,18 @@ type ServiceContext struct {
 
 // NewServiceContext 创建服务上下文
 func NewServiceContext(c config.Config) *ServiceContext {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=True&loc=Local",
+	charset := "utf8mb4"
+	if c.MySQL.Charset != "" {
+		charset = c.MySQL.Charset
+	}
+	
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local",
 		c.MySQL.User,
 		c.MySQL.Password,
 		c.MySQL.Host,
 		c.MySQL.Port,
 		c.MySQL.DBName,
+		charset,
 	)
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{

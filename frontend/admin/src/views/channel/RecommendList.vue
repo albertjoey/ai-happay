@@ -210,7 +210,7 @@ import axios from 'axios';
 const loading = ref(false);
 const tableData = ref<Recommend[]>([]);
 const channels = ref<Channel[]>([]);
-const selectedChannel = ref<number>(7);
+const selectedChannel = ref<number>(0);
 const modalVisible = ref(false);
 const modalTitle = ref('添加推荐位');
 const currentId = ref<number>(0);
@@ -252,6 +252,11 @@ const loadChannels = async () => {
   try {
     const res = await getChannelList({ page: 1, page_size: 100 });
     channels.value = res.list || [];
+    // 自动选择第一个频道
+    if (channels.value.length > 0 && selectedChannel.value === 0) {
+      selectedChannel.value = channels.value[0].id;
+      loadRecommends();
+    }
   } catch (error) {
     message.error('加载频道列表失败');
   }

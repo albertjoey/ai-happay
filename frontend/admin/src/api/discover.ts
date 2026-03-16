@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// 发现页API使用固定端口4005
-const DISCOVER_API_BASE = 'http://localhost:4005/api/v1';
+// 发现页API使用后端服务端口4004
+const DISCOVER_API_BASE = 'http://localhost:4004/api/v1';
 
 // 发现页配置
 export interface DiscoverConfig {

@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	dsn := "root:happy123456@tcp(127.0.0.1:3306)/happy?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "root:root123456@tcp(127.0.0.1:3306)/happy?charset=utf8mb4&parseTime=True&loc=Local"
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("连接数据库失败: " + err.Error())

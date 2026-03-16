@@ -6,14 +6,14 @@ MySQL:
   Host: 127.0.0.1
   Port: 3306
   User: root
-  Password: happy123456
+  Password: root123456
   DBName: happy
   MaxOpenConns: 100
   MaxIdleConns: 10
 
 Redis:
   - Host: 127.0.0.1:6379
-    Pass: ""
+    Pass: redis123456
 
 Elasticsearch:
   Hosts:

@@ -46,20 +46,28 @@ export default function BannerSection({ channelId, bannerIds }: BannerSectionPro
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE}/api/v1/banner/list`, {
-        params: {
-          channel_id: channelId,
-          status: 1,
-        },
+        params: { channel_id: channelId, status: 1 }
       });
       
-      let bannerList = response.data.list || [];
+      let bannerData = response.data.list || [];
       
-      // 如果指定了Banner IDs，只显示这些Banner
+      // 如果指定了bannerIds，只显示指定的banner
       if (bannerIds && bannerIds.length > 0) {
-        bannerList = bannerList.filter((b: Banner) => bannerIds.includes(b.id));
+        bannerData = bannerData.filter((b: any) => bannerIds.includes(b.id));
       }
-      
-      setBanners(bannerList);
+
+      // 转换数据格式
+      const formattedBanners = bannerData.map((b: any) => ({
+        id: b.id,
+        title: b.title,
+        image: b.image,
+        link_type: b.link_type || 1,
+        link_url: b.link_url || '',
+        content_id: b.content_id,
+        sort: b.sort,
+      }));
+
+      setBanners(formattedBanners);
     } catch (error) {
       console.error('加载Banner失败:', error);
     } finally {

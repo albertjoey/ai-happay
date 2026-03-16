@@ -41,6 +41,17 @@ export default function ContentDetailPage() {
     }
   };
 
+  // 处理返回
+  const handleBack = () => {
+    // 检查是否有历史记录
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      // 如果没有历史记录,跳转到首页
+      router.push('/');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -58,7 +69,7 @@ export default function ContentDetailPage() {
         <div className="text-center">
           <p className="text-gray-500">{error || '内容不存在'}</p>
           <button 
-            onClick={() => router.back()}
+            onClick={handleBack}
             className="mt-4 px-4 py-2 bg-primary-500 text-white rounded-lg"
           >
             返回
@@ -77,11 +88,14 @@ export default function ContentDetailPage() {
         return <ImageTextContent content={content} />;
       case 'long_video':
       case 'short_video':
-      case 'short_drama':
+      case 'video':
         return <VideoContent content={content} />;
-      case 'drama':
+      case 'short_drama':
+        return <ShortDramaContent content={content} />;
+      case 'manhua':
         return <DramaContent content={content} />;
       case 'novel':
+      case 'comic':
         return <NovelContent content={content} />;
       default:
         return <ImageTextContent content={content} />;
@@ -98,7 +112,7 @@ export default function ContentDetailPage() {
       {/* 顶部导航 */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
         <div className="flex items-center justify-between px-4 py-3">
-          <button onClick={() => router.back()} className="p-2 -ml-2">
+          <button onClick={handleBack} className="p-2 -ml-2">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -578,6 +592,63 @@ function NovelContent({ content }: { content: ContentDetail }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// 短剧内容组件 - 视频剧集
+function ShortDramaContent({ content }: { content: ContentDetail }) {
+  const [currentEpisode, setCurrentEpisode] = useState(0);
+
+  // 模拟剧集数据
+  const episodes = content.episodes || Array.from({ length: content.chapter_count || 10 }, (_, i) => ({
+    id: i + 1,
+    title: `第${i + 1}集`,
+    video_url: `https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8`,
+    duration: 180 + Math.floor(Math.random() * 120)
+  }));
+
+  const currentVideo = episodes[currentEpisode];
+
+  return (
+    <div>
+      {/* 视频播放器 */}
+      <div className="aspect-video w-full bg-black">
+        <VideoPlayer
+          src={currentVideo?.video_url || 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'}
+          poster={content.cover_url}
+        />
+      </div>
+
+      {/* 标题和信息 */}
+      <div className="px-4 py-3">
+        <h1 className="text-xl font-bold text-gray-900">{content.title}</h1>
+        <p className="mt-1 text-gray-500 text-sm">{currentVideo?.title}</p>
+        <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
+          <span>{formatNumber(content.view_count)} 次播放</span>
+          <span>共 {episodes.length} 集</span>
+        </div>
+      </div>
+
+      {/* 剧集选择 */}
+      <div className="px-4 py-3 border-t border-gray-100">
+        <h3 className="font-medium text-gray-800 mb-2">选集</h3>
+        <div className="grid grid-cols-5 gap-2">
+          {episodes.map((ep, index) => (
+            <button
+              key={ep.id}
+              onClick={() => setCurrentEpisode(index)}
+              className={`px-3 py-2 rounded-lg text-sm ${
+                index === currentEpisode 
+                  ? 'bg-primary-500 text-white' 
+                  : 'bg-gray-100 text-gray-700'
+              }`}
+            >
+              {ep.title}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

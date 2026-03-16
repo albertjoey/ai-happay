@@ -15,62 +15,54 @@
         </a-space>
       </template>
 
-      <vxe-table
-        border
-        stripe
-        :data="tableData"
+      <a-table
+        :columns="columns"
+        :data-source="tableData"
         :loading="loading"
+        :pagination="{ pageSize: 10 }"
+        row-key="id"
       >
-        <vxe-column type="seq" width="60" title="序号"></vxe-column>
-        <vxe-column field="id" title="ID" width="80"></vxe-column>
-        <vxe-column field="name" title="名称" width="150"></vxe-column>
-        <vxe-column field="insert_type" title="插入方式" width="120">
-          <template #default="{ row }">
-            <a-tag v-if="row.insert_type === 'fixed'" color="blue">固定位置</a-tag>
-            <a-tag v-else-if="row.insert_type === 'interval'" color="green">间隔插入</a-tag>
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'insert_type'">
+            <a-tag v-if="record.insert_type === 'fixed'" color="blue">固定位置</a-tag>
+            <a-tag v-else-if="record.insert_type === 'interval'" color="green">间隔插入</a-tag>
             <a-tag v-else color="orange">随机插入</a-tag>
           </template>
-        </vxe-column>
-        <vxe-column field="ad_type" title="广告类型" width="100">
-          <template #default="{ row }">
-            <a-tag v-if="row.ad_type === 'image'" color="purple">图片</a-tag>
+          <template v-else-if="column.key === 'ad_type'">
+            <a-tag v-if="record.ad_type === 'image'" color="purple">图片</a-tag>
             <a-tag v-else color="cyan">视频</a-tag>
           </template>
-        </vxe-column>
-        <vxe-column field="insert_rule" title="插入规则" min-width="200">
-          <template #default="{ row }">
-            <div v-if="row.insert_type === 'fixed'">
-              第{{ row.insert_rule.fixed_position }}条后插入,最多{{ row.insert_rule.max_count }}个
+          <template v-else-if="column.key === 'insert_rule'">
+            <div v-if="record.insert_rule && record.insert_type === 'fixed'">
+              第{{ record.insert_rule.fixed_position }}条后插入,最多{{ record.insert_rule.max_count }}个
             </div>
-            <div v-else-if="row.insert_type === 'interval'">
-              每{{ row.insert_rule.interval }}条插入,最多{{ row.insert_rule.max_count }}个
+            <div v-else-if="record.insert_rule && record.insert_type === 'interval'">
+              每{{ record.insert_rule.interval }}条插入,最多{{ record.insert_rule.max_count }}个
+            </div>
+            <div v-else-if="record.insert_rule">
+              随机插入,最多{{ record.insert_rule.max_count }}个
             </div>
             <div v-else>
-              随机插入,最多{{ row.insert_rule.max_count }}个
+              未配置
             </div>
           </template>
-        </vxe-column>
-        <vxe-column field="status" title="状态" width="100">
-          <template #default="{ row }">
-            <a-tag v-if="row.status === 1" color="success">启用</a-tag>
+          <template v-else-if="column.key === 'status'">
+            <a-tag v-if="record.status === 1" color="success">启用</a-tag>
             <a-tag v-else color="error">禁用</a-tag>
           </template>
-        </vxe-column>
-        <vxe-column field="description" title="描述" min-width="150"></vxe-column>
-        <vxe-column title="操作" width="150" fixed="right">
-          <template #default="{ row }">
+          <template v-else-if="column.key === 'action'">
             <a-space>
-              <a-button type="link" size="small" @click="handleEdit(row)">编辑</a-button>
+              <a-button type="link" size="small" @click="handleEdit(record)">编辑</a-button>
               <a-popconfirm
                 title="确定要删除此广告位吗?"
-                @confirm="handleDelete(row)"
+                @confirm="handleDelete(record)"
               >
                 <a-button type="link" size="small" danger>删除</a-button>
               </a-popconfirm>
             </a-space>
           </template>
-        </vxe-column>
-      </vxe-table>
+        </template>
+      </a-table>
     </a-card>
 
     <!-- 添加/编辑对话框 -->
@@ -160,7 +152,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount } from 'vue';
 import { message } from 'ant-design-vue';
 import { PlusOutlined } from '@ant-design/icons-vue';
 import type { FormInstance } from 'ant-design-vue';
@@ -173,10 +165,25 @@ import {
 } from '@/api/adSlot';
 import { getChannelList, type Channel } from '@/api/channel';
 
+// 组件唯一标识
+const componentKey = ref(Date.now());
+
+// 表格列定义
+const columns = [
+  { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
+  { title: '名称', dataIndex: 'name', key: 'name', width: 150 },
+  { title: '插入方式', dataIndex: 'insert_type', key: 'insert_type', width: 120 },
+  { title: '广告类型', dataIndex: 'ad_type', key: 'ad_type', width: 100 },
+  { title: '插入规则', dataIndex: 'insert_rule', key: 'insert_rule', width: 200 },
+  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
+  { title: '描述', dataIndex: 'description', key: 'description', width: 150 },
+  { title: '操作', key: 'action', width: 150, fixed: 'right' as const },
+];
+
 const loading = ref(false);
 const tableData = ref<AdSlot[]>([]);
 const channels = ref<Channel[]>([]);
-const selectedChannel = ref<number>(7);
+const selectedChannel = ref<number>(0);
 const modalVisible = ref(false);
 const modalTitle = ref('添加广告位');
 const currentId = ref<number>(0);
@@ -209,11 +216,21 @@ const formRules = {
   ad_type: [{ required: true, message: '请选择广告类型', trigger: 'change' }],
 };
 
+// 组件卸载时清理
+onBeforeUnmount(() => {
+  console.log('AdSlotList unmounting, key:', componentKey.value);
+});
+
 // 加载频道列表
 const loadChannels = async () => {
   try {
     const res = await getChannelList({ page: 1, page_size: 100 });
     channels.value = res.list || [];
+    // 自动选择第一个频道
+    if (channels.value.length > 0 && selectedChannel.value === 0) {
+      selectedChannel.value = channels.value[0].id;
+      loadAdSlots();
+    }
   } catch (error) {
     message.error('加载频道列表失败');
   }
@@ -221,6 +238,9 @@ const loadChannels = async () => {
 
 // 加载广告位列表
 const loadAdSlots = async () => {
+  if (selectedChannel.value === 0) {
+    return;
+  }
   loading.value = true;
   try {
     const res = await getAdSlotList({ channel_id: selectedChannel.value });
@@ -329,7 +349,6 @@ const handleModalCancel = () => {
 
 onMounted(() => {
   loadChannels();
-  loadAdSlots();
 });
 </script>
 

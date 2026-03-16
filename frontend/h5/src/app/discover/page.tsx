@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { getDiscoverPage, DiscoverModule } from '@/lib/discoverApi';
 
 export default function DiscoverPage() {
@@ -91,7 +92,11 @@ export default function DiscoverPage() {
               </div>
               <div className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {hotTopics.map((topic: any) => (
-                  <div key={topic.id} className="flex-shrink-0 w-24">
+                  <Link 
+                    key={topic.id} 
+                    href={`/topic/${topic.id}`}
+                    className="flex-shrink-0 w-24 cursor-pointer"
+                  >
                     <div 
                       className="w-24 h-24 rounded-lg mb-1 overflow-hidden relative"
                     >
@@ -112,7 +117,7 @@ export default function DiscoverPage() {
                     </div>
                     <p className="text-xs font-medium truncate">{topic.title}</p>
                     <p className="text-xs text-gray-400">{topic.count || '0'}参与</p>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </section>
@@ -140,7 +145,11 @@ export default function DiscoverPage() {
               </div>
               <div className="space-y-3">
                 {hotRankItems.map((item: any, index: number) => (
-                  <div key={item.id} className="flex items-center gap-3">
+                  <Link 
+                    key={item.id} 
+                    href={`/content/${item.id}`}
+                    className="flex items-center gap-3 cursor-pointer"
+                  >
                     <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                       index < 3 ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' : 'bg-gray-200 text-gray-600'
                     }`}>
@@ -167,7 +176,7 @@ export default function DiscoverPage() {
                       <p className="text-xs text-gray-500">{item.author || '未知作者'}</p>
                       <p className="text-xs text-gray-400">{item.views || '0'}次播放</p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </section>
@@ -227,7 +236,11 @@ export default function DiscoverPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {guessYouLike.map((item: any) => (
-                  <div key={item.id} className="bg-gray-50 rounded-lg overflow-hidden">
+                  <Link 
+                    key={item.id} 
+                    href={`/content/${item.id}`}
+                    className="bg-gray-50 rounded-lg overflow-hidden cursor-pointer"
+                  >
                     <div className="aspect-[3/4] overflow-hidden">
                       {item.cover_url ? (
                         <img 
@@ -251,7 +264,7 @@ export default function DiscoverPage() {
                         <span className="text-xs text-gray-400">{item.views || '0'}次</span>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </section>

@@ -614,4 +614,63 @@ func registerRoutes(server *rest.Server, ctx *svc.ServiceContext) {
 			Handler: handler.TagDeleteHandler(ctx),
 		},
 	)
+
+	// ==================== 发现页路由 ====================
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/discover",
+			Handler: handler.DiscoverHandler(ctx),
+		},
+	)
+
+	// 发现页模块配置
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/discover/config",
+			Handler: handler.DiscoverConfigListHandler(ctx),
+		},
+	)
+
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPut,
+			Path:    "/api/v1/discover/config",
+			Handler: handler.DiscoverConfigUpdateHandler(ctx),
+		},
+	)
+
+	// 发现页内容管理
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/api/v1/discover/items",
+			Handler: handler.DiscoverItemListHandler(ctx),
+		},
+	)
+
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPost,
+			Path:    "/api/v1/discover/items",
+			Handler: handler.DiscoverItemCreateHandler(ctx),
+		},
+	)
+
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodPut,
+			Path:    "/api/v1/discover/items",
+			Handler: handler.DiscoverItemUpdateHandler(ctx),
+		},
+	)
+
+	server.AddRoute(
+		rest.Route{
+			Method:  http.MethodDelete,
+			Path:    "/api/v1/discover/items/:id",
+			Handler: handler.DiscoverItemDeleteHandler(ctx),
+		},
+	)
 }

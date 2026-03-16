@@ -102,13 +102,13 @@ const routes: RouteRecordRaw[] = [
             path: 'ad-slot',
             name: 'AdSlot',
             component: () => import('@/views/channel/AdSlotList.vue'),
-            meta: { title: '广告位管理' },
+            meta: { title: '广告位管理', key: 'ad-slot' },
           },
           {
             path: 'config',
             name: 'ChannelConfig',
             component: () => import('@/views/channel/ChannelConfig.vue'),
-            meta: { title: '频道配置' },
+            meta: { title: '频道配置', key: 'channel-config' },
           },
         ],
       },
@@ -152,6 +152,10 @@ router.beforeEach((to, from, next) => {
   if (to.path !== '/login' && !token) {
     next('/login');
   } else {
+    // 强制更新路由key,确保组件重新渲染
+    if (to.meta && !to.meta.key) {
+      to.meta.key = Date.now();
+    }
     next();
   }
 });

@@ -7,6 +7,7 @@
       </div>
       <a-menu
         v-model:selectedKeys="selectedKeys"
+        v-model:openKeys="openKeys"
         theme="dark"
         mode="inline"
         @click="handleMenuClick"
@@ -36,29 +37,51 @@
             <compass-outlined />
           </template>
           <template #title>发现页管理</template>
-          <a-menu-item key="discover-config">模块配置</a-menu-item>
-          <a-menu-item key="discover-items">内容管理</a-menu-item>
+          <a-menu-item key="discover-config">
+            <span>模块配置</span>
+          </a-menu-item>
+          <a-menu-item key="discover-items">
+            <span>内容管理</span>
+          </a-menu-item>
         </a-sub-menu>
         <a-sub-menu key="channel">
           <template #icon>
             <appstore-outlined />
           </template>
           <template #title>频道管理</template>
-          <a-menu-item key="channel-list">频道列表</a-menu-item>
-          <a-menu-item key="channel-diamond">金刚位管理</a-menu-item>
-          <a-menu-item key="channel-recommend">推荐位管理</a-menu-item>
-          <a-menu-item key="channel-feed-config">Feed流配置</a-menu-item>
-          <a-menu-item key="channel-ad-slot">广告位管理</a-menu-item>
-            <a-menu-item key="channel-config">频道配置</a-menu-item>
+          <a-menu-item key="channel-list">
+            <span>频道列表</span>
+          </a-menu-item>
+          <a-menu-item key="channel-diamond">
+            <span>金刚位管理</span>
+          </a-menu-item>
+          <a-menu-item key="channel-recommend">
+            <span>推荐位管理</span>
+          </a-menu-item>
+          <a-menu-item key="channel-feed-config">
+            <span>Feed流配置</span>
+          </a-menu-item>
+          <a-menu-item key="channel-ad-slot">
+            <span>广告位管理</span>
+          </a-menu-item>
+          <a-menu-item key="channel-config">
+            <span>频道配置</span>
+          </a-menu-item>
         </a-sub-menu>
         <a-sub-menu key="system">
           <template #icon>
             <setting-outlined />
           </template>
           <template #title>系统管理</template>
-          <a-menu-item key="system-role">角色管理</a-menu-item>
-          <a-menu-item key="system-permission">权限管理</a-menu-item>
-          <a-menu-item key="system-admin-user">管理员管理</a-menu-item>
+          <a-menu-item key="system-role">
+            <span>角色管理</span>
+          </a-menu-item>
+          <a-menu-item key="system-permission">
+            <span>权限管理</span>
+          </a-menu-item>
+          <a-menu-item key="system-admin-user">
+            <span>管理员管理</span>
+          </a-menu-item>
         </a-sub-menu>
       </a-menu>
     </a-layout-sider>
@@ -88,7 +111,7 @@
         </div>
       </a-layout-header>
       <a-layout-content style="margin: 16px">
-        <router-view />
+        <router-view :key="$route.name || $route.path" />
       </a-layout-content>
     </a-layout>
   </a-layout>
@@ -113,6 +136,7 @@ const router = useRouter();
 const route = useRoute();
 const collapsed = ref(false);
 const selectedKeys = ref(['dashboard']);
+const openKeys = ref(['channel', 'system', 'discover']);
 
 const currentRoute = computed(() => route);
 

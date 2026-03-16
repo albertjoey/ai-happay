@@ -282,6 +282,7 @@ type AdSlot struct {
 	InsertRule  map[string]interface{} `json:"insert_rule"`
 	AdType      string                 `json:"ad_type"`
 	AdContent   map[string]interface{} `json:"ad_content"`
+	ImageURL    string                 `json:"image_url"`
 	LinkURL     string                 `json:"link_url"`
 	Status      int8                   `json:"status"`
 	Sort        int                    `json:"sort"`
@@ -657,13 +658,18 @@ type DiscoverConfig struct {
 // DiscoverItem 发现页内容项
 type DiscoverItem struct {
 	ID        uint                   `json:"id"`
+	ConfigID  uint                   `json:"config_id"`
 	Module    string                 `json:"module"`
 	ItemType  string                 `json:"item_type"`
 	ItemID    uint                   `json:"item_id"`
 	Title     string                 `json:"title"`
 	CoverURL  string                 `json:"cover_url"`
+	Author    string                 `json:"author"`
+	Views     int                    `json:"views"`
+	Count     int                    `json:"count"`
 	ExtraData map[string]interface{} `json:"extra_data"`
 	SortOrder int                    `json:"sort_order"`
+	IsEnabled bool                   `json:"is_enabled"`
 }
 
 // DiscoverConfigListRequest 发现页配置列表请求

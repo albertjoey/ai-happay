@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// 发现页API使用固定端口4005
-const DISCOVER_API_BASE = 'http://localhost:4005';
+// 发现页API使用channel服务端口4004
+const DISCOVER_API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4004';
 
 // 发现页模块数据
 export interface DiscoverModule {

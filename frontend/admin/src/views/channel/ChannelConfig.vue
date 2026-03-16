@@ -261,7 +261,7 @@ const loading = ref(false);
 const saving = ref(false);
 const previewing = ref(false);
 const channels = ref<Channel[]>([]);
-const selectedChannel = ref<number>(7);
+const selectedChannel = ref<number>(0);
 const activeTab = ref('banner');
 
 const banners = ref<Banner[]>([]);
@@ -349,6 +349,11 @@ const loadChannels = async () => {
   try {
     const res = await getChannelList({ page: 1, page_size: 100 });
     channels.value = res.list || [];
+    // 自动选择第一个频道
+    if (channels.value.length > 0 && selectedChannel.value === 0) {
+      selectedChannel.value = channels.value[0].id;
+      loadConfig();
+    }
   } catch (error) {
     message.error('加载频道列表失败');
   }
