@@ -8,51 +8,41 @@
         </a-button>
       </template>
 
-      <vxe-table
-        border
-        stripe
-        :data="tableData"
+      <a-table
+        :columns="columns"
+        :data-source="tableData"
         :loading="loading"
-        row-config="{keyField: 'id'}"
+        :pagination="pagination"
+        row-key="id"
+        @change="handleTableChange"
       >
-        <vxe-column type="seq" width="60" title="序号"></vxe-column>
-        <vxe-column field="id" title="ID" width="80"></vxe-column>
-        <vxe-column field="name" title="频道名称" width="150"></vxe-column>
-        <vxe-column field="icon" title="图标" width="100">
-          <template #default="{ row }">
-            <span class="icon-preview">{{ row.icon }}</span>
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'icon'">
+            <span class="icon-preview">{{ record.icon }}</span>
           </template>
-        </vxe-column>
-        <vxe-column field="description" title="描述" min-width="200"></vxe-column>
-        <vxe-column field="sort" title="排序" width="80">
-          <template #default="{ row }">
-            <a-tag color="blue">{{ row.sort }}</a-tag>
+          <template v-else-if="column.key === 'sort'">
+            <a-tag color="blue">{{ record.sort }}</a-tag>
           </template>
-        </vxe-column>
-        <vxe-column field="status" title="状态" width="100">
-          <template #default="{ row }">
-            <a-tag v-if="row.status === 1" color="success">启用</a-tag>
+          <template v-else-if="column.key === 'status'">
+            <a-tag v-if="record.status === 1" color="success">启用</a-tag>
             <a-tag v-else color="error">禁用</a-tag>
           </template>
-        </vxe-column>
-        <vxe-column field="created_at" title="创建时间" width="180"></vxe-column>
-        <vxe-column title="操作" width="280" fixed="right">
-          <template #default="{ row }">
+          <template v-else-if="column.key === 'action'">
             <a-space>
-              <a-button type="link" size="small" @click="handleEdit(row)">编辑</a-button>
-              <a-button type="link" size="small" @click="handleConfig(row)">配置</a-button>
-              <a-button type="link" size="small" @click="handleMoveUp(row)">上移</a-button>
-              <a-button type="link" size="small" @click="handleMoveDown(row)">下移</a-button>
+              <a-button type="link" size="small" @click="handleEdit(record)">编辑</a-button>
+              <a-button type="link" size="small" @click="handleConfig(record)">配置</a-button>
+              <a-button type="link" size="small" @click="handleMoveUp(record)">上移</a-button>
+              <a-button type="link" size="small" @click="handleMoveDown(record)">下移</a-button>
               <a-popconfirm
                 title="确定要删除此频道吗?"
-                @confirm="handleDelete(row)"
+                @confirm="handleDelete(record)"
               >
                 <a-button type="link" size="small" danger>删除</a-button>
               </a-popconfirm>
             </a-space>
           </template>
-        </vxe-column>
-      </vxe-table>
+        </template>
+      </a-table>
 
       <div class="pagination">
         <a-pagination
@@ -175,6 +165,18 @@ const pagination = reactive({
   pageSize: 10,
   total: 0,
 });
+
+// 表格列定义
+const columns = [
+  { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
+  { title: '频道名称', dataIndex: 'name', key: 'name', width: 150 },
+  { title: '图标', dataIndex: 'icon', key: 'icon', width: 100 },
+  { title: '描述', dataIndex: 'description', key: 'description', width: 200 },
+  { title: '排序', dataIndex: 'sort', key: 'sort', width: 80 },
+  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
+  { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 180 },
+  { title: '操作', key: 'action', width: 280, fixed: 'right' as const },
+];
 
 const formState = reactive({
   name: '',

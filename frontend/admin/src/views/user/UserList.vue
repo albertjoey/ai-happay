@@ -8,47 +8,26 @@
         </a-button>
       </template>
 
-      <vxe-table
-        border
-        stripe
-        :data="tableData"
+      <a-table
+        :columns="columns"
+        :data-source="tableData"
         :loading="loading"
+        :pagination="{ pageSize: 10 }"
+        row-key="id"
       >
-        <vxe-column type="seq" width="60" title="序号"></vxe-column>
-        <vxe-column field="id" title="ID" width="80"></vxe-column>
-        <vxe-column field="username" title="用户名" width="120"></vxe-column>
-        <vxe-column field="nickname" title="昵称" width="120"></vxe-column>
-        <vxe-column field="email" title="邮箱" width="200"></vxe-column>
-        <vxe-column field="phone" title="手机号" width="150"></vxe-column>
-        <vxe-column field="role" title="角色" width="100">
-          <template #default="{ row }">
-            <a-tag v-if="row.role === 0" color="blue">普通用户</a-tag>
-            <a-tag v-else-if="row.role === 1" color="green">博主</a-tag>
-            <a-tag v-else-if="row.role === 2" color="red">管理员</a-tag>
-          </template>
-        </vxe-column>
-        <vxe-column field="status" title="状态" width="100">
-          <template #default="{ row }">
-            <a-tag v-if="row.status === 1" color="success">启用</a-tag>
-            <a-tag v-else color="error">禁用</a-tag>
-          </template>
-        </vxe-column>
-        <vxe-column field="created_at" title="创建时间" width="180"></vxe-column>
-        <vxe-column title="操作" width="200" fixed="right">
-          <template #default="{ row }">
-            <a-space>
-              <a-button type="link" size="small" @click="handleEdit(row)">编辑</a-button>
-              <a-button type="link" size="small" @click="handleView(row)">查看</a-button>
-              <a-popconfirm
-                title="确定要删除此用户吗？"
-                @confirm="handleDelete(row)"
-              >
-                <a-button type="link" size="small" danger>删除</a-button>
-              </a-popconfirm>
-            </a-space>
-          </template>
-        </vxe-column>
-      </vxe-table>
+        <template #bodyCell="{ column, record }">
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+      </template>
+      </a-table>
 
       <div class="pagination">
         <a-pagination
@@ -161,6 +140,17 @@ const isEdit = ref(false);
 const isView = ref(false);
 const currentId = ref<number>(0);
 const formRef = ref<FormInstance>();
+
+// 表格列定义
+const columns = [
+  { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
+  { title: '用户名', dataIndex: 'username', key: 'username', width: 120 },
+  { title: '昵称', dataIndex: 'nickname', key: 'nickname', width: 120 },
+  { title: '邮箱', dataIndex: 'email', key: 'email', width: 180 },
+  { title: '手机', dataIndex: 'phone', key: 'phone', width: 120 },
+  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
+  { title: '操作', key: 'action', width: 150, fixed: 'right' as const },
+];
 
 const formState = reactive({
   username: '',

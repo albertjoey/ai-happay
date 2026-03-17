@@ -15,55 +15,45 @@
         </a-space>
       </template>
 
-      <vxe-table
-        border
-        stripe
-        :data="tableData"
+      <a-table
+        :columns="columns"
+        :data-source="tableData"
         :loading="loading"
+        :pagination="{ pageSize: 10 }"
+        row-key="id"
       >
-        <vxe-column type="seq" width="60" title="序号"></vxe-column>
-        <vxe-column field="id" title="ID" width="80"></vxe-column>
-        <vxe-column field="title" title="标题" width="150"></vxe-column>
-        <vxe-column field="display_type" title="展示类型" width="120">
-          <template #default="{ row }">
-            <a-tag v-if="row.display_type === 'single'" color="blue">单图</a-tag>
-            <a-tag v-else-if="row.display_type === 'double'" color="green">双图</a-tag>
-            <a-tag v-else-if="row.display_type === 'triple'" color="orange">三图</a-tag>
-            <a-tag v-else-if="row.display_type === 'list'" color="purple">列表</a-tag>
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'display_type'">
+            <a-tag v-if="record.display_type === 'single'" color="blue">单图</a-tag>
+            <a-tag v-else-if="record.display_type === 'double'" color="green">双图</a-tag>
+            <a-tag v-else-if="record.display_type === 'triple'" color="orange">三图</a-tag>
+            <a-tag v-else-if="record.display_type === 'list'" color="purple">列表</a-tag>
             <a-tag v-else>未知</a-tag>
           </template>
-        </vxe-column>
-        <vxe-column field="source_type" title="内容来源" width="120">
-          <template #default="{ row }">
-            <a-tag v-if="row.source_type === 'algorithm'" color="cyan">算法推荐</a-tag>
-            <a-tag v-else-if="row.source_type === 'manual'" color="gold">人工推荐</a-tag>
-            <a-tag v-else-if="row.source_type === 'filter'" color="lime">条件筛选</a-tag>
+          <template v-else-if="column.key === 'source_type'">
+            <a-tag v-if="record.source_type === 'algorithm'" color="cyan">算法推荐</a-tag>
+            <a-tag v-else-if="record.source_type === 'manual'" color="gold">人工推荐</a-tag>
+            <a-tag v-else-if="record.source_type === 'filter'" color="lime">条件筛选</a-tag>
             <a-tag v-else>未知</a-tag>
           </template>
-        </vxe-column>
-        <vxe-column field="sort" title="排序" width="80"></vxe-column>
-        <vxe-column field="status" title="状态" width="100">
-          <template #default="{ row }">
-            <a-tag v-if="row.status === 1" color="success">启用</a-tag>
+          <template v-else-if="column.key === 'status'">
+            <a-tag v-if="record.status === 1" color="success">启用</a-tag>
             <a-tag v-else color="error">禁用</a-tag>
           </template>
-        </vxe-column>
-        <vxe-column field="description" title="描述" min-width="150"></vxe-column>
-        <vxe-column title="操作" width="200" fixed="right">
-          <template #default="{ row }">
+          <template v-else-if="column.key === 'action'">
             <a-space>
-              <a-button type="link" size="small" @click="handleEdit(row)">编辑</a-button>
-              <a-button type="link" size="small" @click="handlePreview(row)">预览</a-button>
+              <a-button type="link" size="small" @click="handleEdit(record)">编辑</a-button>
+              <a-button type="link" size="small" @click="handlePreview(record)">预览</a-button>
               <a-popconfirm
                 title="确定要删除此推荐位吗?"
-                @confirm="handleDelete(row)"
+                @confirm="handleDelete(record)"
               >
                 <a-button type="link" size="small" danger>删除</a-button>
               </a-popconfirm>
             </a-space>
           </template>
-        </vxe-column>
-      </vxe-table>
+        </template>
+      </a-table>
     </a-card>
 
     <!-- 添加/编辑对话框 -->
@@ -241,6 +231,18 @@ const formState = reactive({
   status: 1,
   description: '',
 });
+
+// 表格列定义
+const columns = [
+  { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
+  { title: '标题', dataIndex: 'title', key: 'title', width: 150 },
+  { title: '展示类型', dataIndex: 'display_type', key: 'display_type', width: 120 },
+  { title: '内容来源', dataIndex: 'source_type', key: 'source_type', width: 120 },
+  { title: '排序', dataIndex: 'sort', key: 'sort', width: 80 },
+  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
+  { title: '描述', dataIndex: 'description', key: 'description', width: 150 },
+  { title: '操作', key: 'action', width: 200, fixed: 'right' as const },
+];
 
 const formRules = {
   title: [{ required: true, message: '请输入标题', trigger: 'blur' }],

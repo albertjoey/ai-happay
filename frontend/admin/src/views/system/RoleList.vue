@@ -8,31 +8,24 @@
         </a-button>
       </template>
 
-      <vxe-table border stripe :data="tableData" :loading="loading">
-        <vxe-column type="seq" width="60" title="序号"></vxe-column>
-        <vxe-column field="id" title="ID" width="80"></vxe-column>
-        <vxe-column field="name" title="角色名称" width="150"></vxe-column>
-        <vxe-column field="code" title="角色编码" width="150"></vxe-column>
-        <vxe-column field="description" title="描述" min-width="200"></vxe-column>
-        <vxe-column field="status" title="状态" width="100">
-          <template #default="{ row }">
-            <a-tag v-if="row.status === 1" color="success">启用</a-tag>
-            <a-tag v-else color="error">禁用</a-tag>
-          </template>
-        </vxe-column>
-        <vxe-column field="created_at" title="创建时间" width="180"></vxe-column>
-        <vxe-column title="操作" width="250" fixed="right">
-          <template #default="{ row }">
-            <a-space>
-              <a-button type="link" size="small" @click="handleEdit(row)">编辑</a-button>
-              <a-button type="link" size="small" @click="handlePermission(row)">权限配置</a-button>
-              <a-popconfirm title="确定要删除此角色吗？" @confirm="handleDelete(row)">
-                <a-button type="link" size="small" danger>删除</a-button>
-              </a-popconfirm>
-            </a-space>
-          </template>
-        </vxe-column>
-      </vxe-table>
+      <a-table
+        :columns="columns"
+        :data-source="tableData"
+        :loading="loading"
+        :pagination="{ pageSize: 10 }"
+        row-key="id"
+      >
+        <template #bodyCell="{ column, record }">
+        
+        
+        
+        
+        
+        
+        
+        
+      </template>
+      </a-table>
     </a-card>
 
     <!-- 添加/编辑角色对话框 -->
@@ -110,6 +103,17 @@ const modalTitle = ref('添加角色');
 const isEdit = ref(false);
 const currentId = ref<number>(0);
 const formRef = ref<FormInstance>();
+
+// 表格列定义
+const columns = [
+  { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
+  { title: '角色名称', dataIndex: 'name', key: 'name', width: 150 },
+  { title: '角色编码', dataIndex: 'code', key: 'code', width: 150 },
+  { title: '描述', dataIndex: 'description', key: 'description', width: 200 },
+  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
+  { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 180 },
+  { title: '操作', key: 'action', width: 200, fixed: 'right' as const },
+];
 
 const formState = reactive({
   name: '',

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// 发现页API使用后端服务端口4004
-const DISCOVER_API_BASE = 'http://localhost:4004/api/v1';
+// 发现页API使用环境变量配置
+const DISCOVER_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4004/api/v1';
 
 // 发现页配置
 export interface DiscoverConfig {

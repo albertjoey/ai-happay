@@ -11,56 +11,26 @@
         </a-space>
       </template>
 
-      <vxe-table
-        border
-        stripe
-        :data="tableData"
+      <a-table
+        :columns="columns"
+        :data-source="tableData"
         :loading="loading"
+        :pagination="{ pageSize: 10 }"
+        row-key="id"
       >
-        <vxe-column type="seq" width="60" title="序号"></vxe-column>
-        <vxe-column field="id" title="ID" width="80"></vxe-column>
-        <vxe-column field="sort" title="排序" width="80"></vxe-column>
-        <vxe-column field="title" title="标题" min-width="200"></vxe-column>
-        <vxe-column v-if="materialType === 'novel'" field="word_count" title="字数" width="100">
-          <template #default="{ row }">
-            {{ formatNumber(row.word_count) }}
-          </template>
-        </vxe-column>
-        <vxe-column v-if="materialType === 'short_drama' || materialType === 'long_video'" field="duration" title="时长" width="100">
-          <template #default="{ row }">
-            {{ formatDuration(row.duration) }}
-          </template>
-        </vxe-column>
-        <vxe-column v-if="materialType === 'drama'" field="images" title="图片数" width="100">
-          <template #default="{ row }">
-            {{ row.images?.length || 0 }}张
-          </template>
-        </vxe-column>
-        <vxe-column field="is_free" title="免费" width="80">
-          <template #default="{ row }">
-            <a-tag v-if="row.is_free === 1" color="green">免费</a-tag>
-            <a-tag v-else color="orange">付费</a-tag>
-          </template>
-        </vxe-column>
-        <vxe-column field="price" title="价格" width="80">
-          <template #default="{ row }">
-            {{ row.price > 0 ? row.price + '币' : '-' }}
-          </template>
-        </vxe-column>
-        <vxe-column title="操作" width="150" fixed="right">
-          <template #default="{ row }">
-            <a-space>
-              <a-button type="link" size="small" @click="handleEdit(row)">编辑</a-button>
-              <a-popconfirm
-                title="确定要删除吗?"
-                @confirm="handleDelete(row)"
-              >
-                <a-button type="link" size="small" danger>删除</a-button>
-              </a-popconfirm>
-            </a-space>
-          </template>
-        </vxe-column>
-      </vxe-table>
+        <template #bodyCell="{ column, record }">
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+      </template>
+      </a-table>
     </a-card>
 
     <!-- 添加/编辑对话框 -->
@@ -167,6 +137,15 @@ const chapterTypeName = computed(() => {
   };
   return typeNames[materialType.value] || '章节';
 });
+
+// 表格列定义
+const columns = [
+  { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
+  { title: '章节名称', dataIndex: 'name', key: 'name', width: 200 },
+  { title: '排序', dataIndex: 'sort', key: 'sort', width: 80 },
+  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
+  { title: '操作', key: 'action', width: 150, fixed: 'right' as const },
+];
 
 const formState = reactive({
   title: '',

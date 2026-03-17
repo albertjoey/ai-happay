@@ -25,34 +25,41 @@
         </a-space>
       </template>
 
-      <a-table
-        :columns="columns"
-        :data-source="tableData"
+      <vxe-table
+        border
+        stripe
+        :data="tableData"
         :loading="loading"
-        :pagination="{ pageSize: 10 }"
-        row-key="id"
       >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'type'">
-            <a-tag :color="getTypeColor(record.type)">{{ getTypeName(record.type) }}</a-tag>
+        <vxe-column type="seq" width="60" title="序号"></vxe-column>
+        <vxe-column field="id" title="ID" width="80"></vxe-column>
+        <vxe-column field="name" title="标签名称" width="150"></vxe-column>
+        <vxe-column field="type" title="类型" width="120">
+          <template #default="{ row }">
+            <a-tag :color="getTypeColor(row.type)">{{ getTypeName(row.type) }}</a-tag>
           </template>
-          <template v-else-if="column.key === 'status'">
-            <a-tag v-if="record.status === 1" color="success">启用</a-tag>
+        </vxe-column>
+        <vxe-column field="status" title="状态" width="100">
+          <template #default="{ row }">
+            <a-tag v-if="row.status === 1" color="success">启用</a-tag>
             <a-tag v-else color="error">禁用</a-tag>
           </template>
-          <template v-else-if="column.key === 'action'">
+        </vxe-column>
+        <vxe-column field="created_at" title="创建时间" width="180"></vxe-column>
+        <vxe-column title="操作" width="150" fixed="right">
+          <template #default="{ row }">
             <a-space>
-              <a-button type="link" size="small" @click="handleEdit(record)">编辑</a-button>
+              <a-button type="link" size="small" @click="handleEdit(row)">编辑</a-button>
               <a-popconfirm
                 title="确定要删除此标签吗?"
-                @confirm="handleDelete(record)"
+                @confirm="handleDelete(row)"
               >
                 <a-button type="link" size="small" danger>删除</a-button>
               </a-popconfirm>
             </a-space>
           </template>
-        </template>
-      </a-table>
+        </vxe-column>
+      </vxe-table>
 
       <div class="pagination">
         <a-pagination
@@ -132,16 +139,6 @@ const pagination = reactive({
   pageSize: 10,
   total: 0,
 });
-
-// 表格列定义
-const columns = [
-  { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
-  { title: '标签名称', dataIndex: 'name', key: 'name', width: 150 },
-  { title: '类型', dataIndex: 'type', key: 'type', width: 120 },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
-  { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 180 },
-  { title: '操作', key: 'action', width: 150, fixed: 'right' as const },
-];
 
 const formState = reactive({
   name: '',

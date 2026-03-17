@@ -15,57 +15,25 @@
         </a-space>
       </template>
 
-      <vxe-table
-        border
-        stripe
-        :data="tableData"
+      <a-table
+        :columns="columns"
+        :data-source="tableData"
         :loading="loading"
+        :pagination="{ pageSize: 10 }"
+        row-key="id"
       >
-        <vxe-column type="seq" width="60" title="序号"></vxe-column>
-        <vxe-column field="id" title="ID" width="80"></vxe-column>
-        <vxe-column field="title" title="标题" width="150"></vxe-column>
-        <vxe-column field="layout_type" title="布局类型" width="120">
-          <template #default="{ row }">
-            <a-tag v-if="row.layout_type === 'grid2'" color="blue">两列网格</a-tag>
-            <a-tag v-else-if="row.layout_type === 'grid3'" color="green">三列网格</a-tag>
-            <a-tag v-else-if="row.layout_type === 'list'" color="orange">列表</a-tag>
-            <a-tag v-else-if="row.layout_type === 'waterfall'" color="purple">瀑布流</a-tag>
-            <a-tag v-else>未知</a-tag>
-          </template>
-        </vxe-column>
-        <vxe-column field="content_strategy" title="内容策略" width="120">
-          <template #default="{ row }">
-            <a-tag v-if="row.content_strategy === 'algorithm'" color="cyan">算法推荐</a-tag>
-            <a-tag v-else-if="row.content_strategy === 'manual'" color="gold">人工推荐</a-tag>
-            <a-tag v-else-if="row.content_strategy === 'random'" color="lime">随机推荐</a-tag>
-            <a-tag v-else-if="row.content_strategy === 'tag'" color="blue">标签筛选</a-tag>
-            <a-tag v-else-if="row.content_strategy === 'topic'" color="green">话题筛选</a-tag>
-            <a-tag v-else>未知</a-tag>
-          </template>
-        </vxe-column>
-        <vxe-column field="sort" title="排序" width="80"></vxe-column>
-        <vxe-column field="status" title="状态" width="100">
-          <template #default="{ row }">
-            <a-tag v-if="row.status === 1" color="success">启用</a-tag>
-            <a-tag v-else color="error">禁用</a-tag>
-          </template>
-        </vxe-column>
-        <vxe-column field="description" title="描述" min-width="150"></vxe-column>
-        <vxe-column title="操作" width="200" fixed="right">
-          <template #default="{ row }">
-            <a-space>
-              <a-button type="link" size="small" @click="handleEdit(row)">编辑</a-button>
-              <a-button type="link" size="small" @click="handlePreview(row)">预览</a-button>
-              <a-popconfirm
-                title="确定要删除此Feed流配置吗?"
-                @confirm="handleDelete(row)"
-              >
-                <a-button type="link" size="small" danger>删除</a-button>
-              </a-popconfirm>
-            </a-space>
-          </template>
-        </vxe-column>
-      </vxe-table>
+        <template #bodyCell="{ column, record }">
+        
+        
+        
+        
+        
+        
+        
+        
+        
+      </template>
+      </a-table>
     </a-card>
 
     <!-- 添加/编辑对话框 -->
@@ -255,6 +223,17 @@ const getDefaultFilterRule = () => ({
   sort_order: 'desc',
   limit: 20,
 });
+
+// 表格列定义
+const columns = [
+  { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
+  { title: '标题', dataIndex: 'title', key: 'title', width: 150 },
+  { title: '布局类型', dataIndex: 'layout_type', key: 'layout_type', width: 120 },
+  { title: '内容策略', dataIndex: 'content_strategy', key: 'content_strategy', width: 120 },
+  { title: '排序', dataIndex: 'sort', key: 'sort', width: 80 },
+  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
+  { title: '操作', key: 'action', width: 200, fixed: 'right' as const },
+];
 
 const formState = reactive({
   title: '',

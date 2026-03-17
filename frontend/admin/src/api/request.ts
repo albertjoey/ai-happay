@@ -3,7 +3,7 @@ import { message } from 'ant-design-vue';
 
 // 创建axios实例
 const request = axios.create({
-  baseURL: 'http://localhost:4004/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:4004/api/v1',
   timeout: 10000,
 });
 
